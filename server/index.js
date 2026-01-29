@@ -8,6 +8,9 @@ import productRoutes from './routes/productRoutes.js';
 import shippingRoutes from './routes/shippingRoutes.js';
 import analyticsRoutes from './routes/analyticsRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
+import orderRoutes from './routes/orderRoutes.js';
+import authRoutes from './routes/authRoutes.js';
+import { protect } from './middleware/auth.js';
 import checkConfig from './utils/configChecker.js';
 
 dotenv.config();
@@ -37,10 +40,14 @@ app.use('/api/webhooks', webhookRoutes);
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-// Routes
-app.use('/api/products', productRoutes);
-app.use('/api/shipping', shippingRoutes);
-app.use('/api/analytics', analyticsRoutes);
+// Auth routes (public)
+app.use('/api/auth', authRoutes);
+
+// Protected admin routes
+app.use('/api/products', protect, productRoutes);
+app.use('/api/shipping', protect, shippingRoutes);
+app.use('/api/analytics', protect, analyticsRoutes);
+app.use('/api/orders', protect, orderRoutes);
 
 // Health check
 app.get('/api/health', (req, res) => {

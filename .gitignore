@@ -6,3 +6,5 @@ build
 *.log
 uploads/
 
+.env.example
+.gitignore
