@@ -26,7 +26,7 @@ describe('Product API', () => {
         password: 'password123'
       });
 
-    authToken = loginRes.body.token;
+    authToken = loginRes.body.data.token;
   });
 
   describe('GET /api/products', () => {

@@ -10,7 +10,10 @@
     "client": "npm run dev --prefix client",
     "build": "npm run build --prefix client",
     "start": "node server/index.js",
-    "seed": "node server/seeders/sampleData.js"
+    "seed": "node server/seeders/sampleData.js",
+    "test": "cross-env NODE_ENV=test JWT_SECRET=test-secret jest --config server/jest.config.js --runInBand",
+    "test:watch": "cross-env NODE_ENV=test JWT_SECRET=test-secret jest --config server/jest.config.js --runInBand --watch",
+    "test:coverage": "cross-env NODE_ENV=test JWT_SECRET=test-secret jest --config server/jest.config.js --runInBand --coverage"
   },
   "keywords": [
     "ecommerce",
