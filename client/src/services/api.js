@@ -85,6 +85,16 @@ export const orderAPI = {
   getStats: () => api.get('/orders/stats/summary'),
 };
 
+// Store API (Public - no auth required)
+export const storeAPI = {
+  getProducts: () => api.get('/store/products'),
+  getProduct: (id) => api.get(`/store/products/${id}`),
+  getShippingRates: () => api.get('/checkout/shipping-rates'),
+  createOrder: (data) => api.post('/checkout/create-order', data),
+  verifyPayment: (reference) => api.get(`/checkout/verify/${reference}`),
+  trackOrder: (orderNumber) => api.get(`/checkout/track/${orderNumber}`),
+};
+
 // Image conversion utility
 export const convertToBase64 = (file) => {
   return new Promise((resolve, reject) => {

@@ -10,6 +10,8 @@ import analyticsRoutes from './routes/analyticsRoutes.js';
 import webhookRoutes from './routes/webhookRoutes.js';
 import orderRoutes from './routes/orderRoutes.js';
 import authRoutes from './routes/authRoutes.js';
+import storeRoutes from './routes/storeRoutes.js';
+import checkoutRoutes from './routes/checkoutRoutes.js';
 import { protect } from './middleware/auth.js';
 import checkConfig from './utils/configChecker.js';
 
@@ -42,6 +44,10 @@ app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 // Auth routes (public)
 app.use('/api/auth', authRoutes);
+
+// Public store routes (no auth required)
+app.use('/api/store', storeRoutes);
+app.use('/api/checkout', checkoutRoutes);
 
 // Protected admin routes
 app.use('/api/products', protect, productRoutes);

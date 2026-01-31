@@ -1,11 +1,19 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { CartProvider } from './context/CartContext';
 import AdminLayout from './components/AdminLayout';
 import Dashboard from './pages/Dashboard';
 import ProductManagement from './pages/ProductManagement';
 import ShippingRates from './pages/ShippingRates';
 import OrderManagement from './pages/OrderManagement';
 import Login from './pages/Login';
+
+// Store pages
+import StoreLayout from './components/store/StoreLayout';
+import StoreFront from './pages/store/StoreFront';
+import ProductDetail from './pages/store/ProductDetail';
+import Checkout from './pages/store/Checkout';
+import OrderConfirmation from './pages/store/OrderConfirmation';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -54,7 +62,16 @@ const PublicRoute = ({ children }) => {
 function AppRoutes() {
   return (
     <Routes>
-      {/* Public Routes */}
+      {/* Public Store Routes */}
+      <Route element={<StoreLayout />}>
+        <Route path="/" element={<StoreFront />} />
+        <Route path="/shop" element={<StoreFront />} />
+        <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/checkout" element={<Checkout />} />
+        <Route path="/order-confirmation" element={<OrderConfirmation />} />
+      </Route>
+
+      {/* Admin Login */}
       <Route path="/login" element={
         <PublicRoute>
           <Login />
@@ -73,9 +90,6 @@ function AppRoutes() {
         <Route path="products" element={<ProductManagement />} />
         <Route path="shipping" element={<ShippingRates />} />
       </Route>
-
-      {/* Redirect root to admin */}
-      <Route path="/" element={<Navigate to="/admin/dashboard" replace />} />
     </Routes>
   );
 }
@@ -83,9 +97,11 @@ function AppRoutes() {
 function App() {
   return (
     <Router>
-      <AuthProvider>
-        <AppRoutes />
-      </AuthProvider>
+      <CartProvider>
+        <AuthProvider>
+          <AppRoutes />
+        </AuthProvider>
+      </CartProvider>
     </Router>
   );
 }
