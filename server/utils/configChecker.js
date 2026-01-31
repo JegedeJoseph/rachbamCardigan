@@ -12,7 +12,6 @@ export const checkConfig = () => {
     'CLOUDINARY_API_KEY',
     'CLOUDINARY_API_SECRET',
     'PAYSTACK_SECRET_KEY',
-    'PAYSTACK_PUBLIC_KEY',
     'JWT_SECRET'
   ];
 
