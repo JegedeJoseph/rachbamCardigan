@@ -155,6 +155,67 @@ router.post('/login', async (req, res) => {
   }
 });
 
+// @route   POST /api/auth/google
+// @desc    Login/Register via Google
+// @access  Public
+router.post('/google', async (req, res) => {
+  try {
+    const { idToken } = req.body;
+
+    if (!idToken) {
+      return res.status(400).json({ success: false, message: 'Google ID token is required' });
+    }
+
+    // Verify token with Firebase Admin
+    const { getAuth } = await import('firebase-admin/auth');
+    const decodedToken = await getAuth().verifyIdToken(idToken);
+    
+    const { email, name, picture } = decodedToken;
+
+    // Check if user exists
+    let user = await userRepository.findOneByEmail(email);
+
+    if (!user) {
+      // Create user if they don't exist
+      const userCount = await userRepository.countDocuments();
+      user = await userRepository.create({
+        name: name || 'Google User',
+        email,
+        password: Math.random().toString(36).slice(-10), // Random password for Google users
+        role: userCount === 0 ? 'superadmin' : 'admin'
+      });
+    } else {
+      if (!user.isActive) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account is deactivated'
+        });
+      }
+      // Update last login
+      await userRepository.updateLastLogin(user._id);
+    }
+
+    // Generate token
+    const token = generateToken(user._id);
+
+    res.json({
+      success: true,
+      data: {
+        user: {
+          id: user._id,
+          name: user.name,
+          email: user.email,
+          role: user.role
+        },
+        token
+      }
+    });
+  } catch (error) {
+    console.error('Google Auth Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to authenticate with Google' });
+  }
+});
+
 // @route   GET /api/auth/me
 // @desc    Get current user
 // @access  Protected
