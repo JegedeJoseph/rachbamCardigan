@@ -76,15 +76,8 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Server is running' });
 });
 
-// Serve static files from React app in production
-if (process.env.NODE_ENV === 'production') {
-  app.use(express.static(path.join(__dirname, '../client/dist')));
-
-  // Handle React routing, return all requests to React app
-  app.get(/.*/, (req, res) => {
-    res.sendFile(path.join(__dirname, '../client/dist/index.html'));
-  });
-}
+// Backend is hosted separately on Render, so it only serves the API.
+// Frontend is hosted on Vercel.
 
 // Error handling middleware
 app.use((err, req, res, next) => {
