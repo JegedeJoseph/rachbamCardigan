@@ -1,5 +1,5 @@
 import express from 'express';
-import Product from '../models/Product.js';
+import { productRepository } from '../repositories/productRepository.js';
 import { uploadImage, uploadMultipleImages, deleteImage } from '../services/cloudinary.js';
 import { validate, createProductSchema, updateProductSchema } from '../validators/productValidator.js';
 
@@ -8,7 +8,7 @@ const router = express.Router();
 // Get all products
 router.get('/', async (req, res) => {
   try {
-    const products = await Product.find().sort({ createdAt: -1 });
+    const products = await productRepository.find();
     res.json({ success: true, data: products });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -18,7 +18,7 @@ router.get('/', async (req, res) => {
 // Get single product
 router.get('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await productRepository.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
@@ -31,8 +31,7 @@ router.get('/:id', async (req, res) => {
 // Create product
 router.post('/', validate(createProductSchema), async (req, res) => {
   try {
-    const product = new Product(req.body);
-    await product.save();
+    const product = await productRepository.create(req.body);
     res.status(201).json({ success: true, data: product });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -42,11 +41,7 @@ router.post('/', validate(createProductSchema), async (req, res) => {
 // Update product
 router.put('/:id', validate(updateProductSchema), async (req, res) => {
   try {
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      req.body,
-      { new: true, runValidators: true }
-    );
+    const product = await productRepository.findByIdAndUpdate(req.params.id, req.body);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
@@ -59,17 +54,19 @@ router.put('/:id', validate(updateProductSchema), async (req, res) => {
 // Delete product
 router.delete('/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await productRepository.findById(req.params.id);
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
     }
 
     // Delete images from Cloudinary
-    for (const image of product.images) {
-      await deleteImage(image.publicId);
+    if (product.images) {
+      for (const image of product.images) {
+        if (image.publicId) await deleteImage(image.publicId);
+      }
     }
 
-    await Product.findByIdAndDelete(req.params.id);
+    await productRepository.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'Product deleted successfully' });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -79,7 +76,7 @@ router.delete('/:id', async (req, res) => {
 // Upload product images
 router.post('/:id/images', async (req, res) => {
   try {
-    const { images } = req.body; // Array of base64 encoded images
+    const { images } = req.body; 
     
     if (!images || !Array.isArray(images) || images.length === 0) {
       return res.status(400).json({ success: false, message: 'No images provided' });
@@ -87,11 +84,7 @@ router.post('/:id/images', async (req, res) => {
 
     const uploadedImages = await uploadMultipleImages(images);
     
-    const product = await Product.findByIdAndUpdate(
-      req.params.id,
-      { $push: { images: { $each: uploadedImages } } },
-      { new: true }
-    );
+    const product = await productRepository.addImages(req.params.id, uploadedImages);
 
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
@@ -106,19 +99,11 @@ router.post('/:id/images', async (req, res) => {
 // Delete product image
 router.delete('/:id/images/:imageId', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await productRepository.removeImage(req.params.id, req.params.imageId);
+    
     if (!product) {
-      return res.status(404).json({ success: false, message: 'Product not found' });
+      return res.status(404).json({ success: false, message: 'Product or Image not found' });
     }
-
-    const image = product.images.id(req.params.imageId);
-    if (!image) {
-      return res.status(404).json({ success: false, message: 'Image not found' });
-    }
-
-    await deleteImage(image.publicId);
-    product.images.pull(req.params.imageId);
-    await product.save();
 
     res.json({ success: true, data: product });
   } catch (error) {

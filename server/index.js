@@ -1,5 +1,5 @@
 import express from 'express';
-import mongoose from 'mongoose';
+import { db } from './services/firebase.js';
 import cors from 'cors';
 import dotenv from 'dotenv';
 import path from 'path';
@@ -95,18 +95,10 @@ app.use((err, req, res, next) => {
   });
 });
 
-// MongoDB connection
-mongoose.connect(process.env.MONGODB_URI)
-  .then(() => {
-    console.log('✅ Connected to MongoDB');
-    app.listen(PORT, () => {
-      console.log(`🚀 Server running on port ${PORT}`);
-    });
-  })
-  .catch((error) => {
-    console.error('❌ MongoDB connection error:', error);
-    process.exit(1);
-  });
+// Start server
+app.listen(PORT, () => {
+  console.log(`🚀 Server running on port ${PORT}`);
+});
 
 export default app;
 

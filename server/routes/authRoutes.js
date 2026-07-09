@@ -1,6 +1,6 @@
 import express from 'express';
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import { userRepository } from '../repositories/userRepository.js';
 import { protect } from '../middleware/auth.js';
 
 const router = express.Router();
@@ -20,7 +20,7 @@ router.post('/register', async (req, res) => {
     const { name, email, password } = req.body;
 
     // Check if any users exist
-    const userCount = await User.countDocuments();
+    const userCount = await userRepository.countDocuments();
     
     // If users exist, require authentication to create new users
     if (userCount > 0) {
@@ -36,7 +36,7 @@ router.post('/register', async (req, res) => {
       try {
         const token = authHeader.split(' ')[1];
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const adminUser = await User.findById(decoded.id);
+        const adminUser = await userRepository.findById(decoded.id);
         
         if (!adminUser || adminUser.role !== 'superadmin') {
           return res.status(403).json({
@@ -53,7 +53,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Check if user already exists
-    const existingUser = await User.findOne({ email });
+    const existingUser = await userRepository.findOneByEmail(email);
     if (existingUser) {
       return res.status(400).json({
         success: false,
@@ -62,7 +62,7 @@ router.post('/register', async (req, res) => {
     }
 
     // Create user (first user becomes superadmin)
-    const user = await User.create({
+    const user = await userRepository.create({
       name,
       email,
       password,
@@ -104,8 +104,8 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Find user and include password
-    const user = await User.findOne({ email }).select('+password');
+    // Find user 
+    const user = await userRepository.findOneByEmail(email);
 
     if (!user) {
       return res.status(401).json({
@@ -123,7 +123,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Check password
-    const isMatch = await user.comparePassword(password);
+    const isMatch = await userRepository.comparePassword(password, user.password);
 
     if (!isMatch) {
       return res.status(401).json({
@@ -133,8 +133,7 @@ router.post('/login', async (req, res) => {
     }
 
     // Update last login
-    user.lastLogin = new Date();
-    await user.save({ validateBeforeSave: false });
+    await userRepository.updateLastLogin(user._id);
 
     // Generate token
     const token = generateToken(user._id);
@@ -161,7 +160,11 @@ router.post('/login', async (req, res) => {
 // @access  Protected
 router.get('/me', protect, async (req, res) => {
   try {
-    const user = await User.findById(req.user.id);
+    const user = await userRepository.findById(req.user.id);
+
+    if (!user) {
+      return res.status(404).json({ success: false, message: 'User not found' });
+    }
 
     res.json({
       success: true,
@@ -208,9 +211,9 @@ router.put('/password', protect, async (req, res) => {
       });
     }
 
-    const user = await User.findById(req.user.id).select('+password');
+    const user = await userRepository.findById(req.user.id);
 
-    const isMatch = await user.comparePassword(currentPassword);
+    const isMatch = await userRepository.comparePassword(currentPassword, user.password);
     if (!isMatch) {
       return res.status(401).json({
         success: false,
@@ -218,8 +221,7 @@ router.put('/password', protect, async (req, res) => {
       });
     }
 
-    user.password = newPassword;
-    await user.save();
+    await userRepository.updatePassword(user._id, newPassword);
 
     res.json({
       success: true,
@@ -235,7 +237,7 @@ router.put('/password', protect, async (req, res) => {
 // @access  Public
 router.get('/check', async (req, res) => {
   try {
-    const userCount = await User.countDocuments();
+    const userCount = await userRepository.countDocuments();
     res.json({
       success: true,
       data: {
