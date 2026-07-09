@@ -33,7 +33,10 @@ const PORT = process.env.PORT || 5000;
 const allowedOrigins = [
   process.env.CLIENT_URL,
   'http://localhost:5173',
-  'http://localhost:3000'
+  'http://localhost:3000',
+  'https://rachbam.name.ng',
+  "https://rachbam-cardigan-tpk9.vercel.app",
+  "https://www.rachbam.name.ng"
 ].filter(Boolean);
 
 // Middleware
@@ -41,7 +44,7 @@ app.use(cors({
   origin: function (origin, callback) {
     // Allow requests with no origin (mobile apps, curl, etc.)
     if (!origin) return callback(null, true);
-    
+
     if (allowedOrigins.some(allowed => origin.startsWith(allowed.replace(/\/$/, '')))) {
       callback(null, true);
     } else {
