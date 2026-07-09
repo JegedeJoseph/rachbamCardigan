@@ -7,7 +7,6 @@ dotenv.config();
  */
 export const checkConfig = () => {
   const requiredVars = [
-    'MONGODB_URI',
     'CLOUDINARY_CLOUD_NAME',
     'CLOUDINARY_API_KEY',
     'CLOUDINARY_API_SECRET',
@@ -56,7 +55,6 @@ export const checkConfig = () => {
 
   console.log('✅ All required environment variables are set');
   console.log('\nConfiguration:');
-  console.log(`   - MongoDB: ${process.env.MONGODB_URI.replace(/\/\/.*@/, '//***@')}`);
   console.log(`   - Cloudinary: ${process.env.CLOUDINARY_CLOUD_NAME}`);
   console.log(`   - Paystack: ${process.env.PAYSTACK_SECRET_KEY.substring(0, 10)}...`);
   console.log(`   - Port: ${process.env.PORT || 5000}`);
