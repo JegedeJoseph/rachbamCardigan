@@ -79,6 +79,11 @@ app.get('/api/health', (req, res) => {
   res.json({ success: true, message: 'Server is running' });
 });
 
+// Root API route
+app.get('/', (req, res) => {
+  res.json({ success: true, message: 'Naira Cardigans API is running. Please use the /api endpoints.' });
+});
+
 // Backend is hosted separately on Render, so it only serves the API.
 // Frontend is hosted on Vercel.
 

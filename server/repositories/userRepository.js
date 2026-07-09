@@ -11,10 +11,9 @@ const formatDoc = (doc) => {
 
 export const userRepository = {
   async countDocuments() {
-    // In a real production app, counting all documents might be expensive.
-    // Firebase provides aggregation queries for count.
-    const snapshot = await usersRef.count().get();
-    return snapshot.data().count;
+    // Compatible with firebase-admin v10+ (which you downgraded to)
+    const snapshot = await usersRef.select().get();
+    return snapshot.size;
   },
 
   async findOneByEmail(email) {
