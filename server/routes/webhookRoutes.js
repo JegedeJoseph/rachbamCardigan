@@ -1,7 +1,7 @@
 import express from 'express';
 import crypto from 'crypto';
-import Order from '../models/Order.js';
-import Product from '../models/Product.js';
+import { orderRepository } from '../repositories/orderRepository.js';
+import { productRepository } from '../repositories/productRepository.js';
 
 const router = express.Router();
 
@@ -24,7 +24,7 @@ router.post('/paystack', express.raw({ type: 'application/json' }), async (req, 
       const { reference, amount, customer } = event.data;
 
       // Find and update order
-      const order = await Order.findOne({ paystackReference: reference });
+      const order = await orderRepository.findOneByPaystackReference(reference);
 
       if (!order) {
         console.error('Order not found for reference:', reference);
@@ -38,18 +38,19 @@ router.post('/paystack', express.raw({ type: 'application/json' }), async (req, 
       }
 
       // Update order status
-      order.paymentStatus = 'verified';
-      order.orderStatus = 'processing';
-      await order.save();
+      await orderRepository.findByIdAndUpdate(order._id, {
+        paymentStatus: 'verified',
+        orderStatus: 'processing'
+      });
 
       // Update product stock
       for (const item of order.items) {
-        const product = await Product.findById(item.product);
+        const product = await productRepository.findById(item.product._id || item.product);
         if (product) {
-          const variant = product.variants.id(item.variantId);
-          if (variant) {
-            variant.stock -= item.quantity;
-            await product.save();
+          const variantIndex = product.variants.findIndex(v => v._id === item.variantId || v.id === item.variantId);
+          if (variantIndex !== -1) {
+            product.variants[variantIndex].stock -= item.quantity;
+            await productRepository.findByIdAndUpdate(product._id, { variants: product.variants });
           }
         }
       }

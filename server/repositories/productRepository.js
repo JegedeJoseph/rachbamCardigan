@@ -81,20 +81,38 @@ export const productRepository = {
     return formatDoc(doc);
   },
 
-  async removeImage(id, imageId) {
-    const docRef = productsRef.doc(id);
+  async removeImage(productId, imageId) {
+    const docRef = productsRef.doc(productId);
     const doc = await docRef.get();
     if (!doc.exists) return null;
     
     const data = doc.data();
-    const updatedImages = (data.images || []).filter(img => img._id !== imageId && img.publicId !== imageId);
+    if (!data.images) return formatDoc(doc);
     
-    await docRef.update({
-      images: updatedImages,
+    const newImages = data.images.filter(img => img.publicId !== imageId && img.id !== imageId);
+    await docRef.update({ 
+      images: newImages,
       updatedAt: admin.firestore.FieldValue.serverTimestamp()
     });
     
     const updatedDoc = await docRef.get();
     return formatDoc(updatedDoc);
+  },
+
+  async findFeatured() {
+    const snapshot = await productsRef.where('featured', '==', true).get();
+    let products = snapshot.docs.map(formatDoc);
+    products = products.filter(p => p.totalStock > 0);
+    // Sort descending by createdAt
+    products.sort((a, b) => b.createdAt - a.createdAt);
+    return products.slice(0, 8);
+  },
+
+  async findLowStock() {
+    const snapshot = await productsRef.get();
+    let products = snapshot.docs.map(formatDoc);
+    products = products.filter(p => p.totalStock > 0 && p.totalStock < 10);
+    products.sort((a, b) => a.totalStock - b.totalStock);
+    return products.slice(0, 10);
   }
 };

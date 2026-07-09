@@ -1,9 +1,9 @@
 import express from 'express';
 import crypto from 'crypto';
 import axios from 'axios';
-import Order from '../models/Order.js';
-import Product from '../models/Product.js';
-import ShippingRate from '../models/ShippingRate.js';
+import { orderRepository } from '../repositories/orderRepository.js';
+import { productRepository } from '../repositories/productRepository.js';
+import { shippingRateRepository } from '../repositories/shippingRateRepository.js';
 
 const router = express.Router();
 
@@ -20,12 +20,12 @@ const validateCart = async (items) => {
   let subtotal = 0;
 
   for (const item of items) {
-    const product = await Product.findById(item.productId);
+    const product = await productRepository.findById(item.productId);
     if (!product) {
       throw new Error(`Product not found: ${item.productId}`);
     }
 
-    const variant = product.variants.id(item.variantId);
+    const variant = product.variants.find(v => v._id === item.variantId || v.id === item.variantId);
     if (!variant) {
       throw new Error(`Variant not found for ${product.name}`);
     }
@@ -75,7 +75,7 @@ router.post('/create-order', async (req, res) => {
     const { validatedItems, subtotal } = await validateCart(items);
 
     // Get shipping rate
-    const shippingRate = await ShippingRate.findOne({ state: shippingAddress.state });
+    const shippingRate = await shippingRateRepository.findOneByState(shippingAddress.state);
     if (!shippingRate) {
       return res.status(400).json({ success: false, message: `Shipping not available to ${shippingAddress.state}` });
     }
@@ -88,7 +88,7 @@ router.post('/create-order', async (req, res) => {
     const paystackReference = `${orderNumber}-${Date.now()}`;
 
     // Create order (pending payment)
-    const order = new Order({
+    const order = await orderRepository.create({
       orderNumber,
       customer: {
         name: customer.name,
@@ -109,8 +109,6 @@ router.post('/create-order', async (req, res) => {
       paymentStatus: 'pending',
       orderStatus: 'pending'
     });
-
-    await order.save();
 
     // Initialize Paystack transaction
     const paystackResponse = await axios.post(
@@ -165,8 +163,7 @@ router.get('/verify/:reference', async (req, res) => {
     const { reference } = req.params;
 
     // Find order
-    const order = await Order.findOne({ paystackReference: reference })
-      .populate('items.product', 'name images');
+    const order = await orderRepository.findOneByPaystackReference(reference);
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });
@@ -195,18 +192,21 @@ router.get('/verify/:reference', async (req, res) => {
 
     if (paystackResponse.data.data.status === 'success') {
       // Update order status
+      await orderRepository.findByIdAndUpdate(order._id, {
+        paymentStatus: 'verified',
+        orderStatus: 'processing'
+      });
       order.paymentStatus = 'verified';
       order.orderStatus = 'processing';
-      await order.save();
 
       // Deduct stock
       for (const item of order.items) {
-        const product = await Product.findById(item.product);
+        const product = await productRepository.findById(item.product._id || item.product);
         if (product) {
-          const variant = product.variants.id(item.variantId);
-          if (variant) {
-            variant.stock -= item.quantity;
-            await product.save();
+          const variantIndex = product.variants.findIndex(v => v._id === item.variantId || v.id === item.variantId);
+          if (variantIndex !== -1) {
+            product.variants[variantIndex].stock -= item.quantity;
+            await productRepository.findByIdAndUpdate(product._id, { variants: product.variants });
           }
         }
       }
@@ -243,7 +243,7 @@ router.get('/verify/:reference', async (req, res) => {
 // @access  Public
 router.get('/shipping-rates', async (req, res) => {
   try {
-    const rates = await ShippingRate.find().sort({ state: 1 });
+    const rates = await shippingRateRepository.find();
     res.json({ success: true, data: rates });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });
@@ -255,8 +255,7 @@ router.get('/shipping-rates', async (req, res) => {
 // @access  Public
 router.get('/track/:orderNumber', async (req, res) => {
   try {
-    const order = await Order.findOne({ orderNumber: req.params.orderNumber })
-      .populate('items.product', 'name images');
+    const order = await orderRepository.findOneByOrderNumber(req.params.orderNumber);
 
     if (!order) {
       return res.status(404).json({ success: false, message: 'Order not found' });

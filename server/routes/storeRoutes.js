@@ -1,5 +1,5 @@
 import express from 'express';
-import Product from '../models/Product.js';
+import { productRepository } from '../repositories/productRepository.js';
 
 const router = express.Router();
 
@@ -8,9 +8,14 @@ const router = express.Router();
 // @access  Public
 router.get('/products', async (req, res) => {
   try {
-    // Only return products with stock
-    const products = await Product.find()
-      .sort({ featured: -1, createdAt: -1 });
+    const products = await productRepository.find();
+    // Sort in memory by featured and then createdAt
+    products.sort((a, b) => {
+      if (a.featured === b.featured) {
+        return (b.createdAt || 0) - (a.createdAt || 0);
+      }
+      return a.featured ? -1 : 1;
+    });
     
     res.json({ success: true, data: products });
   } catch (error) {
@@ -23,9 +28,7 @@ router.get('/products', async (req, res) => {
 // @access  Public
 router.get('/products/featured', async (req, res) => {
   try {
-    const products = await Product.find({ featured: true, totalStock: { $gt: 0 } })
-      .sort({ createdAt: -1 })
-      .limit(8);
+    const products = await productRepository.findFeatured();
     
     res.json({ success: true, data: products });
   } catch (error) {
@@ -38,7 +41,7 @@ router.get('/products/featured', async (req, res) => {
 // @access  Public
 router.get('/products/:id', async (req, res) => {
   try {
-    const product = await Product.findById(req.params.id);
+    const product = await productRepository.findById(req.params.id);
     
     if (!product) {
       return res.status(404).json({ success: false, message: 'Product not found' });
