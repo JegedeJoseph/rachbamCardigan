@@ -88,12 +88,24 @@ export const AuthProvider = ({ children }) => {
     await authAPI.updatePassword({ currentPassword, newPassword });
   };
 
+  const loginWithGoogle = async (idToken) => {
+    const response = await authAPI.googleLogin({ idToken });
+    const { user: loggedInUser, token } = response.data.data;
+    
+    localStorage.setItem('token', token);
+    setUser(loggedInUser);
+    setRequiresSetup(false);
+    
+    return loggedInUser;
+  };
+
   const value = {
     user,
     loading,
     requiresSetup,
     isAuthenticated: !!user,
     login,
+    loginWithGoogle,
     register,
     logout,
     updatePassword,
