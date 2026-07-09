@@ -1,5 +1,5 @@
 import jwt from 'jsonwebtoken';
-import User from '../models/User.js';
+import { userRepository } from '../repositories/userRepository.js';
 
 /**
  * Protect routes - verify JWT token
@@ -25,7 +25,7 @@ export const protect = async (req, res, next) => {
       const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
       // Get user from token
-      const user = await User.findById(decoded.id);
+      const user = await userRepository.findById(decoded.id);
 
       if (!user) {
         return res.status(401).json({
@@ -84,7 +84,7 @@ export const optionalAuth = async (req, res, next) => {
     if (token) {
       try {
         const decoded = jwt.verify(token, process.env.JWT_SECRET);
-        const user = await User.findById(decoded.id);
+        const user = await userRepository.findById(decoded.id);
         if (user && user.isActive) {
           req.user = user;
         }
