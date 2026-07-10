@@ -28,7 +28,7 @@ Behind the scenes, Naira Cardigans features a powerful, secure Admin Dashboard. 
 * **Sales Analytics:** Visual dashboard showing total revenue, recent orders, and top-selling products.
 
 ### 💻 Technical Highlights
-* **Robust Backend:** Built on Node.js & Express with a secure MongoDB database.
+* **Robust Backend:** Built on Node.js & Express with a secure Firebase (Firestore) database.
 * **Cloud Infrastructure:** Cloudinary integration for lightning-fast image delivery.
 * **Webhooks:** Automated Paystack webhooks to verify transactions and instantly deduct stock.
 * **Type Safety:** Zod validation on all API endpoints to guarantee data integrity.
@@ -39,7 +39,7 @@ Behind the scenes, Naira Cardigans features a powerful, secure Admin Dashboard. 
 
 ### Prerequisites
 - Node.js (v18+)
-- MongoDB (Local or Atlas)
+- Firebase Project (Firestore & Auth)
 - Cloudinary Account (for image hosting)
 - Paystack Account (for payments)
 - Firebase Account (for Google Auth)
@@ -62,8 +62,10 @@ cd ..
 ### 2. Environment Variables
 Create a `.env` file in the root directory and configure the following:
 ```env
-# Database
-MONGODB_URI=mongodb://localhost:27017/naira-cardigans
+# Firebase Configuration
+FIREBASE_PROJECT_ID=your_project_id
+FIREBASE_CLIENT_EMAIL=your_client_email
+FIREBASE_PRIVATE_KEY=your_private_key
 
 # Authentication
 JWT_SECRET=your_super_secret_key
@@ -103,7 +105,7 @@ rachbamCardigan/
 │   ├── src/context/        # Global state (Cart, Auth)
 │   └── src/services/       # API integration layers
 ├── server/                 # Backend Node.js/Express Application
-│   ├── models/             # MongoDB Mongoose Schemas
+│   ├── models/             # Firestore Data Models
 │   ├── routes/             # RESTful API endpoints
 │   ├── repositories/       # Database access layer (abstraction)
 │   ├── services/           # Third-party integrations (Paystack, Cloudinary)
