@@ -39,7 +39,7 @@ const validateCart = async (items) => {
 
     validatedItems.push({
       product: product._id || product.id,
-      variantId: variant._id || variant.id,
+      variantId: variant._id || variant.id || `${variant.size}-${variant.color}`,
       name: product.name,
       size: variant.size,
       color: variant.color,
@@ -117,7 +117,7 @@ router.post('/create-order', async (req, res) => {
         email: customer.email,
         amount: Math.round(total * 100), // Paystack expects amount in kobo
         reference: paystackReference,
-        callback_url: `${process.env.CLIENT_URL}/order-confirmation?reference=${paystackReference}`,
+        callback_url: `${process.env.CLIENT_URL || 'https://www.rachbam.name.ng https://rachbam-cardigan-tpk9.vercel.app'}/order-confirmation?reference=${paystackReference}`,
         metadata: {
           order_number: orderNumber,
           customer_name: customer.name,
@@ -148,9 +148,9 @@ router.post('/create-order', async (req, res) => {
 
   } catch (error) {
     console.error('Checkout error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Failed to create order' 
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to create order'
     });
   }
 });
@@ -203,7 +203,11 @@ router.get('/verify/:reference', async (req, res) => {
       for (const item of order.items) {
         const product = await productRepository.findById(item.product._id || item.product);
         if (product) {
-          const variantIndex = product.variants.findIndex(v => v._id === item.variantId || v.id === item.variantId);
+          const variantIndex = product.variants.findIndex(v =>
+            v._id === item.variantId ||
+            v.id === item.variantId ||
+            `${v.size}-${v.color}` === item.variantId
+          );
           if (variantIndex !== -1) {
             product.variants[variantIndex].stock -= item.quantity;
             await productRepository.findByIdAndUpdate(product._id, { variants: product.variants });
@@ -231,9 +235,9 @@ router.get('/verify/:reference', async (req, res) => {
 
   } catch (error) {
     console.error('Verification error:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: error.message || 'Failed to verify payment' 
+    res.status(500).json({
+      success: false,
+      message: error.message || 'Failed to verify payment'
     });
   }
 });
