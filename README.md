@@ -1,52 +1,56 @@
-# Naira Cardigans - E-commerce Admin Dashboard
+# 🧥 Naira Cardigans
+> **A premium, modern e-commerce platform built for the seamless sale of luxury cardigans in Nigeria.**
 
-A production-ready MERN stack e-commerce platform for managing cardigan products with integrated payment processing via Paystack.
+---
 
-## 🚀 Features
+## 🌟 What is Naira Cardigans?
 
-### Product Management
-- ✅ Create, edit, and delete products
-- ✅ Dynamic variant management (size, color, stock)
-- ✅ Cloudinary image upload integration
-- ✅ Real-time stock tracking
-- ✅ Zod validation for data integrity
+**For the Shopper:**
+Naira Cardigans is a sleek, lightning-fast online storefront designed to provide a premium shopping experience. Customers can browse high-quality cashmere cardigans, view rich image galleries, select their perfect size and color, and securely pay using their local currency (₦) via Paystack. 
 
-### Shipping Management
-- ✅ Configure shipping rates per Nigerian state
-- ✅ Estimated delivery times
-- ✅ Easy rate updates
+**For the Business Owner:**
+Behind the scenes, Naira Cardigans features a powerful, secure Admin Dashboard. Business owners can effortlessly manage product inventory, track real-time stock levels, configure shipping rates across all 36 Nigerian states, and view beautiful analytics dashboards to track daily sales and revenue.
 
-### Sales Analytics Dashboard
-- ✅ Total verified orders (via Paystack webhook)
-- ✅ Total revenue in Naira (₦)
-- ✅ Top-selling variants by size and color
-- ✅ Low stock alerts
-- ✅ Monthly revenue trends
+---
 
-### Payment Integration
-- ✅ Paystack webhook for payment verification
-- ✅ Automatic stock deduction on verified payments
-- ✅ Secure signature validation
+## ✨ Key Features
 
-## 📋 Prerequisites
+### 🛍️ Storefront Experience (UX/UI)
+* **Responsive Design:** Flawless shopping experience on mobile, tablet, and desktop.
+* **Rich Product Details:** Image galleries, detailed sizing, and social proof.
+* **Frictionless Checkout:** Guest checkout flow with instant Paystack payment verification.
+* **Order Tracking:** Customers can track their orders through processing, shipping, and delivery stages.
 
-- Node.js (v18 or higher)
-- MongoDB (local or Atlas)
-- Cloudinary account
-- Paystack account
+### 💼 Admin & Business Tools
+* **Dynamic Inventory:** Create products with multiple variants (Size/Color) and track stock independently.
+* **Smart Shipping:** Dynamic shipping cost calculation based on the customer's state.
+* **Order Management:** View, fulfill, and update order statuses in real-time.
+* **Sales Analytics:** Visual dashboard showing total revenue, recent orders, and top-selling products.
 
-## 🛠️ Installation
+### 💻 Technical Highlights
+* **Robust Backend:** Built on Node.js & Express with a secure MongoDB database.
+* **Cloud Infrastructure:** Cloudinary integration for lightning-fast image delivery.
+* **Webhooks:** Automated Paystack webhooks to verify transactions and instantly deduct stock.
+* **Type Safety:** Zod validation on all API endpoints to guarantee data integrity.
 
-### 1. Clone the repository
+---
+
+## 🚀 Getting Started (For Developers)
+
+### Prerequisites
+- Node.js (v18+)
+- MongoDB (Local or Atlas)
+- Cloudinary Account (for image hosting)
+- Paystack Account (for payments)
+- Firebase Account (for Google Auth)
+
+### 1. Installation
+Clone the repository and install both server and client dependencies:
 ```bash
 git clone <repository-url>
 cd rachbamCardigan
-```
 
-### 2. Install dependencies
-
-```bash
-# Install root dependencies
+# Install server dependencies
 npm install
 
 # Install client dependencies
@@ -55,173 +59,67 @@ npm install
 cd ..
 ```
 
-### 3. Environment Configuration
-
-Create a `.env` file in the root directory:
-
+### 2. Environment Variables
+Create a `.env` file in the root directory and configure the following:
 ```env
-# MongoDB
+# Database
 MONGODB_URI=mongodb://localhost:27017/naira-cardigans
 
-# Cloudinary
+# Authentication
+JWT_SECRET=your_super_secret_key
+
+# Cloudinary (Images)
 CLOUDINARY_CLOUD_NAME=your_cloud_name
 CLOUDINARY_API_KEY=your_api_key
 CLOUDINARY_API_SECRET=your_api_secret
 
-# Paystack
+# Paystack (Payments)
 PAYSTACK_SECRET_KEY=sk_test_your_secret_key
 PAYSTACK_PUBLIC_KEY=pk_test_your_public_key
 
-# Server
-PORT=5000
+# App Configuration
+PORT=10000
 NODE_ENV=development
-
-# Frontend URL
 CLIENT_URL=http://localhost:5173
 ```
 
-### 4. Run the application
-
+### 3. Run the Platform
+Start both the React frontend and Node backend concurrently:
 ```bash
-# Development mode (runs both server and client)
 npm run dev
-
-# Server only
-npm run server
-
-# Client only
-npm run client
 ```
+* **Frontend:** `http://localhost:5173`
+* **Backend:** `http://localhost:10000`
 
-The application will be available at:
-- Frontend: http://localhost:5173
-- Backend API: http://localhost:5000
+---
 
-## 📁 Project Structure
+## 🏗️ Architecture & Structure
 
-```
+```text
 rachbamCardigan/
-├── server/
-│   ├── models/           # MongoDB models
-│   │   ├── Product.js
-│   │   ├── Order.js
-│   │   └── ShippingRate.js
-│   ├── routes/           # API routes
-│   │   ├── productRoutes.js
-│   │   ├── shippingRoutes.js
-│   │   ├── analyticsRoutes.js
-│   │   └── webhookRoutes.js
-│   ├── services/         # External services
-│   │   └── cloudinary.js
-│   ├── validators/       # Zod schemas
-│   │   └── productValidator.js
-│   └── index.js          # Server entry point
-├── client/
-│   ├── src/
-│   │   ├── components/   # React components
-│   │   ├── pages/        # Page components
-│   │   ├── services/     # API services
-│   │   └── utils/        # Utility functions
-│   └── package.json
-└── package.json
+├── client/                 # Frontend React Application
+│   ├── src/components/     # Reusable UI elements (Store & Admin)
+│   ├── src/pages/          # Page layouts (Checkout, Dashboard, etc.)
+│   ├── src/context/        # Global state (Cart, Auth)
+│   └── src/services/       # API integration layers
+├── server/                 # Backend Node.js/Express Application
+│   ├── models/             # MongoDB Mongoose Schemas
+│   ├── routes/             # RESTful API endpoints
+│   ├── repositories/       # Database access layer (abstraction)
+│   ├── services/           # Third-party integrations (Paystack, Cloudinary)
+│   └── index.js            # Server entry point
 ```
 
-## 🔌 API Endpoints
+---
 
-### Products
-- `GET /api/products` - Get all products
-- `GET /api/products/:id` - Get single product
-- `POST /api/products` - Create product
-- `PUT /api/products/:id` - Update product
-- `DELETE /api/products/:id` - Delete product
-- `POST /api/products/:id/images` - Upload images
-- `DELETE /api/products/:id/images/:imageId` - Delete image
+## 🌐 Deployment
 
-### Shipping
-- `GET /api/shipping` - Get all shipping rates
-- `GET /api/shipping/:state` - Get rate by state
-- `POST /api/shipping` - Create/update shipping rate
-- `PUT /api/shipping/:id` - Update shipping rate
-- `DELETE /api/shipping/:id` - Delete shipping rate
+Naira Cardigans is optimized for deployment on modern cloud platforms like Render, Vercel, or traditional VPS (like Whogohost). 
 
-### Analytics
-- `GET /api/analytics/dashboard` - Get dashboard data
-- `GET /api/analytics/sales?period=week` - Get sales by period
+**Production Checklist:**
+1. Secure all `.env` variables in your hosting dashboard.
+2. Ensure your Paystack Webhook URL points to `https://your-live-domain.com/api/webhooks/paystack`.
+3. Set `NODE_ENV=production`.
 
-### Webhooks
-- `POST /api/webhooks/paystack` - Paystack payment webhook
-
-## 🎨 Tech Stack
-
-**Frontend:**
-- React 18
-- Vite
-- Tailwind CSS
-- React Router DOM
-- Axios
-- Lucide React (icons)
-
-**Backend:**
-- Node.js
-- Express
-- MongoDB with Mongoose
-- Zod (validation)
-- Cloudinary (image storage)
-- Paystack (payments)
-
-## 📦 Deployment to Whogohost
-
-### Backend Deployment
-
-1. **Build the client:**
-```bash
-cd client
-npm run build
-cd ..
-```
-
-2. **Configure for production:**
-Update `.env` with production values
-
-3. **Upload to Whogohost:**
-- Use cPanel File Manager or FTP
-- Upload all files except `node_modules` and `client/node_modules`
-- Install dependencies via SSH or cPanel Terminal:
-```bash
-npm install --production
-cd client && npm install && npm run build
-```
-
-4. **Configure Node.js App in cPanel:**
-- Application Root: `/home/username/rachbamCardigan`
-- Application URL: your domain
-- Application Startup File: `server/index.js`
-- Node.js Version: 18.x or higher
-
-5. **Set Environment Variables in cPanel**
-
-### MongoDB Setup
-- Use MongoDB Atlas (recommended)
-- Or install MongoDB on VPS if available
-
-### Paystack Webhook Configuration
-- Go to Paystack Dashboard → Settings → Webhooks
-- Add webhook URL: `https://yourdomain.com/api/webhooks/paystack`
-- Copy the secret key to your `.env`
-
-## 🔐 Security Notes
-
-- Never commit `.env` file
-- Use strong MongoDB passwords
-- Keep Paystack secret keys secure
-- Validate webhook signatures
-- Use HTTPS in production
-
-## 📝 License
-
-MIT
-
-## 👨‍💻 Support
-
-For issues and questions, please open an issue in the repository.
-
+---
+*Built with ❤️ for the modern Nigerian e-commerce ecosystem.*
