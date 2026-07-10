@@ -14,6 +14,7 @@ import StoreFront from './pages/store/StoreFront';
 import ProductDetail from './pages/store/ProductDetail';
 import Checkout from './pages/store/Checkout';
 import OrderConfirmation from './pages/store/OrderConfirmation';
+import TrackOrder from './pages/store/TrackOrder';
 
 // Protected Route wrapper
 const ProtectedRoute = ({ children }) => {
@@ -69,6 +70,7 @@ function AppRoutes() {
         <Route path="/product/:id" element={<ProductDetail />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-confirmation" element={<OrderConfirmation />} />
+        <Route path="/track-order" element={<TrackOrder />} />
       </Route>
 
       {/* Admin Login */}
