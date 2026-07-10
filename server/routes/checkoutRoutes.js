@@ -117,7 +117,7 @@ router.post('/create-order', async (req, res) => {
         email: customer.email,
         amount: Math.round(total * 100), // Paystack expects amount in kobo
         reference: paystackReference,
-        callback_url: `${process.env.CLIENT_URL || 'https://www.rachbam.name.ng https://rachbam-cardigan-tpk9.vercel.app'}/order-confirmation?reference=${paystackReference}`,
+        callback_url: `${process.env.CLIENT_URL || 'https://www.rachbam.name.ng'}/order-confirmation?reference=${paystackReference}`,
         metadata: {
           order_number: orderNumber,
           customer_name: customer.name,
