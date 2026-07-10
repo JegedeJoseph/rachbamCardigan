@@ -38,8 +38,8 @@ const validateCart = async (items) => {
     subtotal += itemTotal;
 
     validatedItems.push({
-      product: product._id,
-      variantId: variant._id,
+      product: product._id || product.id,
+      variantId: variant._id || variant.id,
       name: product.name,
       size: variant.size,
       color: variant.color,
