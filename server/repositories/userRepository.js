@@ -78,5 +78,33 @@ export const userRepository = {
 
   async deleteUser(id) {
     await usersRef.doc(id).delete();
+  },
+
+  async setResetToken(id, token, expireTime) {
+    const docRef = usersRef.doc(id);
+    await docRef.update({
+      resetPasswordToken: token,
+      resetPasswordExpire: expireTime,
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
+  },
+
+  async findByResetToken(token) {
+    const snapshot = await usersRef
+      .where('resetPasswordToken', '==', token)
+      .limit(1)
+      .get();
+      
+    if (snapshot.empty) return null;
+    return formatDoc(snapshot.docs[0]);
+  },
+
+  async clearResetToken(id) {
+    const docRef = usersRef.doc(id);
+    await docRef.update({
+      resetPasswordToken: admin.firestore.FieldValue.delete(),
+      resetPasswordExpire: admin.firestore.FieldValue.delete(),
+      updatedAt: admin.firestore.FieldValue.serverTimestamp()
+    });
   }
 };

@@ -50,6 +50,8 @@ export const authAPI = {
   updatePassword: (data) => api.put('/auth/password', data),
   getUsers: () => api.get('/auth/users'),
   deleteUser: (id) => api.delete(`/auth/users/${id}`),
+  forgotPassword: (data) => api.post('/auth/forgot-password', data),
+  resetPassword: (token, data) => api.post(`/auth/reset-password/${token}`, data),
 };
 
 // Products API

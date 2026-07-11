@@ -7,7 +7,8 @@ import ProductManagement from './pages/ProductManagement';
 import ShippingRates from './pages/ShippingRates';
 import OrderManagement from './pages/OrderManagement';
 import Login from './pages/Login';
-
+import ForgotPassword from './pages/ForgotPassword';
+import ResetPassword from './pages/ResetPassword';
 import StaffManagement from './pages/StaffManagement';
 
 // Store pages
@@ -79,6 +80,16 @@ function AppRoutes() {
       <Route path="/login" element={
         <PublicRoute>
           <Login />
+        </PublicRoute>
+      } />
+      <Route path="/forgot-password" element={
+        <PublicRoute>
+          <ForgotPassword />
+        </PublicRoute>
+      } />
+      <Route path="/reset-password/:token" element={
+        <PublicRoute>
+          <ResetPassword />
         </PublicRoute>
       } />
 
