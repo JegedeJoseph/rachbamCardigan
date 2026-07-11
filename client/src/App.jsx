@@ -8,6 +8,8 @@ import ShippingRates from './pages/ShippingRates';
 import OrderManagement from './pages/OrderManagement';
 import Login from './pages/Login';
 
+import StaffManagement from './pages/StaffManagement';
+
 // Store pages
 import StoreLayout from './components/store/StoreLayout';
 import StoreFront from './pages/store/StoreFront';
@@ -91,6 +93,7 @@ function AppRoutes() {
         <Route path="orders" element={<OrderManagement />} />
         <Route path="products" element={<ProductManagement />} />
         <Route path="shipping" element={<ShippingRates />} />
+        <Route path="staff" element={<StaffManagement />} />
       </Route>
     </Routes>
   );

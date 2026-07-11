@@ -69,5 +69,14 @@ export const userRepository = {
 
   async comparePassword(candidatePassword, userPassword) {
     return await bcrypt.compare(candidatePassword, userPassword);
+  },
+
+  async findUsers() {
+    const snapshot = await usersRef.orderBy('createdAt', 'desc').get();
+    return snapshot.docs.map(formatDoc);
+  },
+
+  async deleteUser(id) {
+    await usersRef.doc(id).delete();
   }
 };

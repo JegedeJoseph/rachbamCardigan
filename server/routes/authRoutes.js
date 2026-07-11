@@ -176,13 +176,21 @@ router.post('/google', async (req, res) => {
     let user = await userRepository.findOneByEmail(email);
 
     if (!user) {
-      // Create user if they don't exist
+      // Check if we already have users
       const userCount = await userRepository.countDocuments();
+      if (userCount > 0) {
+        return res.status(401).json({
+          success: false,
+          message: 'Account not found. Contact the Super Admin to grant you access.'
+        });
+      }
+
+      // Create first user (Superadmin)
       user = await userRepository.create({
         name: name || 'Google User',
         email,
-        password: Math.random().toString(36).slice(-10), // Random password for Google users
-        role: userCount === 0 ? 'superadmin' : 'admin'
+        password: Math.random().toString(36).slice(-10),
+        role: 'superadmin'
       });
     } else {
       if (!user.isActive) {
@@ -305,6 +313,59 @@ router.get('/check', async (req, res) => {
         hasUsers: userCount > 0,
         requiresSetup: userCount === 0
       }
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   GET /api/auth/users
+// @desc    Get all staff members
+// @access  Protected (Superadmin only)
+router.get('/users', protect, async (req, res) => {
+  try {
+    const user = await userRepository.findById(req.user.id);
+    if (!user || user.role !== 'superadmin') {
+      return res.status(403).json({ success: false, message: 'Only superadmin can view users' });
+    }
+
+    const users = await userRepository.findUsers();
+    
+    // Remove passwords from response
+    const safeUsers = users.map(u => {
+      const { password, ...safeUser } = u;
+      return safeUser;
+    });
+
+    res.json({
+      success: true,
+      data: safeUsers
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// @route   DELETE /api/auth/users/:id
+// @desc    Delete a staff member
+// @access  Protected (Superadmin only)
+router.delete('/users/:id', protect, async (req, res) => {
+  try {
+    const user = await userRepository.findById(req.user.id);
+    if (!user || user.role !== 'superadmin') {
+      return res.status(403).json({ success: false, message: 'Only superadmin can delete users' });
+    }
+
+    // Prevent deleting oneself
+    if (req.user.id === req.params.id) {
+      return res.status(400).json({ success: false, message: 'Cannot delete your own account' });
+    }
+
+    await userRepository.deleteUser(req.params.id);
+
+    res.json({
+      success: true,
+      message: 'User deleted successfully'
     });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

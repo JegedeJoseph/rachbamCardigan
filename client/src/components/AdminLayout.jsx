@@ -11,6 +11,7 @@ const AdminLayout = () => {
     { to: '/admin/orders', icon: ShoppingBag, label: 'Orders' },
     { to: '/admin/products', icon: Package, label: 'Products' },
     { to: '/admin/shipping', icon: Truck, label: 'Shipping Rates' },
+    ...(user?.role === 'superadmin' ? [{ to: '/admin/staff', icon: User, label: 'Staff Management' }] : []),
   ];
 
   const handleLogout = async () => {

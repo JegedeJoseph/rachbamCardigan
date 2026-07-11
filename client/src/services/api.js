@@ -48,6 +48,8 @@ export const authAPI = {
   me: () => api.get('/auth/me'),
   check: () => api.get('/auth/check'),
   updatePassword: (data) => api.put('/auth/password', data),
+  getUsers: () => api.get('/auth/users'),
+  deleteUser: (id) => api.delete(`/auth/users/${id}`),
 };
 
 // Products API
