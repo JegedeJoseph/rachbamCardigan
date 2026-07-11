@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { UserPlus, Shield, Mail, Trash2, ShieldCheck, Clock } from 'lucide-react';
-import { authAPI } from '../../services/api';
-import { useAuth } from '../../context/AuthContext';
+import { authAPI } from '../services/api';
+import { useAuth } from '../context/AuthContext';
 
 const StaffManagement = () => {
   const { user: currentUser } = useAuth();
