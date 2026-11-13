@@ -128,7 +128,23 @@ router.post('/:id/images', async (req, res) => {
       return res.status(400).json({ success: false, message: 'No images provided' });
     }
 
-    const uploadedImages = await uploadMultipleImages(images);
+    const uploadedImages = [];
+    const base64ToUpload = [];
+
+    for (const item of images) {
+      if (typeof item === 'string' && item.startsWith('http')) {
+        uploadedImages.push({ url: item, publicId: '' });
+      } else if (typeof item === 'object' && item.url) {
+        uploadedImages.push(item);
+      } else if (typeof item === 'string' && item.startsWith('data:image')) {
+        base64ToUpload.push(item);
+      }
+    }
+
+    if (base64ToUpload.length > 0) {
+      const newlyUploaded = await uploadMultipleImages(base64ToUpload);
+      uploadedImages.push(...newlyUploaded);
+    }
     
     const product = await productRepository.addImages(req.params.id, uploadedImages);
 
@@ -160,12 +176,21 @@ router.delete('/:id/images/:imageId', async (req, res) => {
 // Upload product video
 router.post('/:id/video', async (req, res) => {
   try {
-    const { video } = req.body; // base64 video
+    const { video } = req.body; // base64 video or remote URL
     if (!video) return res.status(400).json({ success: false, message: 'No video provided' });
-    const uploaded = await uploadVideo(video);
+
+    let videoUrl = video;
+    let videoPublicId = '';
+
+    if (typeof video === 'string' && !video.startsWith('http')) {
+      const uploaded = await uploadVideo(video);
+      videoUrl = uploaded.url;
+      videoPublicId = uploaded.publicId;
+    }
+
     const product = await productRepository.findByIdAndUpdate(req.params.id, {
-      videoUrl: uploaded.url,
-      videoPublicId: uploaded.publicId
+      videoUrl,
+      videoPublicId
     });
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
     res.json({ success: true, data: product });
@@ -173,15 +198,25 @@ router.post('/:id/video', async (req, res) => {
     res.status(500).json({ success: false, message: error.message });
   }
 });
+
 // Upload product hover image
 router.post('/:id/hover-image', async (req, res) => {
   try {
-    const { image } = req.body;
+    const { image } = req.body; // base64 or remote URL
     if (!image) return res.status(400).json({ success: false, message: 'No image provided' });
-    const uploaded = await uploadImage(image, 'naira-cardigans/hover');
+
+    let hoverImageUrl = image;
+    let hoverImagePublicId = '';
+
+    if (typeof image === 'string' && !image.startsWith('http')) {
+      const uploaded = await uploadImage(image, 'naira-cardigans/hover');
+      hoverImageUrl = uploaded.url;
+      hoverImagePublicId = uploaded.publicId;
+    }
+
     const product = await productRepository.findByIdAndUpdate(req.params.id, {
-      hoverImageUrl: uploaded.url,
-      hoverImagePublicId: uploaded.publicId
+      hoverImageUrl,
+      hoverImagePublicId
     });
     if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
     res.json({ success: true, data: product });

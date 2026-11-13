@@ -391,8 +391,20 @@ const ProductForm = ({ product, onClose }) => {
       if (formData.warmthLevel) payload.warmthLevel = Number(formData.warmthLevel);
       if (formData.fiberComposition?.trim()) payload.fiberComposition = formData.fiberComposition.trim();
       if (formData.careInstructions?.trim()) payload.careInstructions = formData.careInstructions.trim();
-      if (formData.videoUrl) payload.videoUrl = formData.videoUrl;
-      if (formData.videoPublicId) payload.videoPublicId = formData.videoPublicId;
+      
+      // Ensure hover image URL is saved directly in payload if available
+      if (hoverImagePreview && hoverImagePreview.startsWith('http')) {
+        payload.hoverImageUrl = hoverImagePreview;
+      }
+
+      // Ensure video URL is saved directly in payload if available
+      if (videoPreview && videoPreview.startsWith('http')) {
+        payload.videoUrl = videoPreview;
+        if (formData.videoPublicId) payload.videoPublicId = formData.videoPublicId;
+      } else if (formData.videoUrl) {
+        payload.videoUrl = formData.videoUrl;
+        if (formData.videoPublicId) payload.videoPublicId = formData.videoPublicId;
+      }
 
       const measurements = {};
       if (formData.measurements?.chest?.trim()) measurements.chest = formData.measurements.chest.trim();
@@ -420,20 +432,23 @@ const ProductForm = ({ product, onClose }) => {
 
       const productId = savedProduct._id;
 
-      // 1. Upload Gallery images (only new base64 items)
-      const base64ImagesToUpload = images.filter((img) => img.startsWith('data:image'));
-      if (base64ImagesToUpload.length > 0) {
-        await productAPI.uploadImages(productId, base64ImagesToUpload);
+      // 1. Upload Gallery images (both new base64 and polished Cloudinary URLs)
+      if (images.length > 0) {
+        await productAPI.uploadImages(productId, images);
       }
 
-      // 2. Upload Hover image if new base64
+      // 2. Upload / update Hover image if present
       if (newHoverImage && newHoverImage.startsWith('data:image')) {
         await productAPI.uploadHoverImage(productId, newHoverImage);
+      } else if (hoverImagePreview && hoverImagePreview.startsWith('http')) {
+        await productAPI.uploadHoverImage(productId, hoverImagePreview);
       }
 
-      // 3. Upload Video if new file
-      if (newVideo) {
+      // 3. Upload / update Video if present
+      if (newVideo && newVideo.startsWith('data:')) {
         await productAPI.uploadVideo(productId, newVideo);
+      } else if (videoPreview && videoPreview.startsWith('http')) {
+        await productAPI.uploadVideo(productId, videoPreview);
       }
 
       alert('Product saved successfully!');
