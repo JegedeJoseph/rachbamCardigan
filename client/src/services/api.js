@@ -114,6 +114,7 @@ export const lookbookAPI = {
   create: (data) => api.post('/lookbooks', data),
   update: (id, data) => api.put(`/lookbooks/${id}`, data),
   delete: (id) => api.delete(`/lookbooks/${id}`),
+  aiSuggestStory: (data) => api.post('/lookbooks/ai-suggest-story', data),
 };
 
 // Image conversion utility

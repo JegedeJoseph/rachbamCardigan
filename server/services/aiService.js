@@ -188,3 +188,126 @@ Return ONLY a valid JSON object (no markdown fences, no extra text) with the fol
     return getFallbackKnitwearSpecs({ name, category, knitGauge });
   }
 };
+
+/**
+ * Fallback Lookbook Story Generator
+ */
+export const getFallbackLookbookStory = ({ productName = '', category = 'Cardigan', occasion = '' }) => {
+  const pName = productName || 'The Signature Cardigan';
+  const occ = occasion || 'Effortless Everyday';
+
+  let title = `The Editorial Edit: ${pName} in Motion`;
+  let description = `A masterclass in transitional layering. Whether navigating high-powered air-conditioned boardrooms or strolling through breezy evening gatherings, this piece effortlessly grounds the wardrobe with refined artisanal drape.`;
+  let stylingTips = [
+    `The Casual Elevation: Style ${pName} draped open over a crisp white cotton tee with structured high-waisted denim and leather sandals.`,
+    `The Modern Professional: Button up cleanly as a standalone knit blouse tucked into tailored wide-leg trousers with gold jewelry.`,
+    `The Golden Hour Slip: Layer over a bias-cut silk or satin slip dress with strappy kitten heels for an understated evening silhouette.`
+  ];
+
+  if (occasion.toLowerCase().includes('harmattan') || pName.toLowerCase().includes('chunky')) {
+    title = `Harmattan Sanctuary: Heavyweight Warmth Styled 3 Ways`;
+    description = `Capturing the golden, dusty haze of Harmattan mornings. This statement knit pairs robust insulating density with breathable natural comfort, making cold early hours feel indulgent and cozy.`;
+    stylingTips = [
+      `Morning Layering: Pair buttoned-up with dark-wash selvedge denim, ribbed socks, and Chelsea boots for morning chills.`,
+      `Textural Contrast: Drape effortlessly over relaxed linen trousers to contrast the heavy knit with breezy drape.`,
+      `Cinched Silhouette: Fasten the middle three buttons and cinch with a slim braided leather belt for tailored definition.`
+    ];
+  } else if (occasion.toLowerCase().includes('office') || occasion.toLowerCase().includes('work')) {
+    title = `Executive Comfort: Subverting the Office Dress Code`;
+    description = `Subtle sophistication for corporate AC environments. Moving beyond rigid blazers, this structured knit provides quiet luxury warmth while projecting sharp, intentional presence.`;
+    stylingTips = [
+      `The Power Monotone: Wear buttoned up over pressed ivory pleated trousers with minimalist pointed-toe flats.`,
+      `Collar Accents: Layer over a crisp collared poplin shirt, allowing the cuffs and collar to peek through cleanly.`,
+      `Over-the-Shoulder: Drape diagonally across the chest or over shoulders during casual boardroom meetings.`
+    ];
+  } else if (occasion.toLowerCase().includes('evening') || occasion.toLowerCase().includes('dinner')) {
+    title = `Twilight Drape: Romantic Evening Knitwear`;
+    description = `Effortless glamour for breezy rooftop dinners and gallery openings. When the sun dips and coastal breezes roll in, this cardigan delivers tactile softness without overpowering evening looks.`;
+    stylingTips = [
+      `The Off-Shoulder Accent: Undo the top two buttons and gently slide one side off the shoulder over a lace-trim bralette.`,
+      `Slip Dress Harmony: Pair draped open over an ankle-length satin slip dress with metallic accessories.`,
+      `Tonal Elegance: Style with monochromatic silk trousers and understated strappy heels.`
+    ];
+  }
+
+  return {
+    title,
+    description,
+    mood: occ,
+    stylingTips,
+    source: 'heuristic'
+  };
+};
+
+/**
+ * AI Lookbook Story Generator (Gemini + Smart Fallback)
+ */
+export const generateLookbookStory = async ({ productName = '', category = 'Cardigan', knitGauge = '', occasion = '', imageBase64 = '' }) => {
+  const apiKey = process.env.GEMINI_API_KEY;
+
+  if (!apiKey) {
+    return getFallbackLookbookStory({ productName, category, occasion });
+  }
+
+  try {
+    const prompt = `You are a high-fashion creative director and editorial copywriter for "Rachbam Cardigans", a luxury artisanal knitwear brand in Nigeria.
+Create an inspiring, magazine-quality Lookbook story centered around:
+Cardigan Name: "${productName || 'Signature Cardigan'}"
+Category: "${category || 'Cardigan'}"
+Knit Gauge: "${knitGauge || 'All-Season'}"
+Desired Occasion/Vibe: "${occasion || 'Versatile Luxury'}"
+
+Return ONLY a valid JSON object (no markdown formatting, no code blocks):
+{
+  "title": "Evocative, catchy magazine-headline title (e.g. 'The Sunday Slowdown: Chunky Knit 3 Ways')",
+  "description": "2-3 sentences of poetic, tactile storytelling evoking luxury, texture, and contextual Nigerian atmosphere (harmattan, AC, evening sea breeze)",
+  "mood": "Brief vibe tag (e.g. 'Harmattan Warmth' or 'Architectural Office Layering')",
+  "stylingTips": [
+    "Detailed Outfit 1: Specific base layers, pants/skirt, footwear, and how the cardigan is worn (buttoned, open, belted)",
+    "Detailed Outfit 2: Another contrasting style transformation",
+    "Detailed Outfit 3: An evening or creative alternative look"
+  ]
+}`;
+
+    const parts = [{ text: prompt }];
+
+    if (imageBase64) {
+      const match = imageBase64.match(/^data:(image\/[a-zA-Z+]+);base64,(.+)$/);
+      if (match) {
+        parts.push({
+          inlineData: {
+            mimeType: match[1],
+            data: match[2],
+          },
+        });
+      }
+    }
+
+    const response = await axios.post(
+      `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`,
+      {
+        contents: [{ parts }],
+        generationConfig: {
+          temperature: 0.5,
+          responseMimeType: 'application/json',
+        },
+      },
+      { timeout: 15000 }
+    );
+
+    const candidate = response.data?.candidates?.[0]?.content?.parts?.[0]?.text;
+    if (candidate) {
+      const cleanJson = candidate.replace(/```json/g, '').replace(/```/g, '').trim();
+      const parsed = JSON.parse(cleanJson);
+      return {
+        ...parsed,
+        source: 'gemini',
+      };
+    }
+
+    return getFallbackLookbookStory({ productName, category, occasion });
+  } catch (error) {
+    console.error('Error invoking Gemini for lookbook story:', error.message);
+    return getFallbackLookbookStory({ productName, category, occasion });
+  }
+};

@@ -2,8 +2,21 @@ import express from 'express';
 import { lookbookRepository } from '../repositories/lookbookRepository.js';
 import { uploadImage, uploadVideo } from '../services/cloudinary.js';
 import { protect } from '../middleware/auth.js';
+import { generateLookbookStory } from '../services/aiService.js';
 
 const router = express.Router();
+
+// AI Lookbook Story Generator
+router.post('/ai-suggest-story', protect, async (req, res) => {
+  try {
+    const { productName, category, knitGauge, occasion, imageBase64 } = req.body;
+    const story = await generateLookbookStory({ productName, category, knitGauge, occasion, imageBase64 });
+    res.json({ success: true, data: story });
+  } catch (error) {
+    console.error('AI lookbook suggest error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // Public: get all lookbooks
 router.get('/', async (req, res) => {
