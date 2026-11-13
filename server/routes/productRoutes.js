@@ -1,9 +1,55 @@
 import express from 'express';
 import { productRepository } from '../repositories/productRepository.js';
-import { uploadImage, uploadMultipleImages, deleteImage, uploadVideo } from '../services/cloudinary.js';
+import { 
+  uploadImage, 
+  uploadMultipleImages, 
+  deleteImage, 
+  uploadVideo, 
+  enhanceAndUploadImage, 
+  generateMotionVideoFromImage 
+} from '../services/cloudinary.js';
 import { validate, createProductSchema, updateProductSchema } from '../validators/productValidator.js';
+import { generateCardiganSpecifications } from '../services/aiService.js';
 
 const router = express.Router();
+
+// AI Specifications Generator (Gemini + Smart Heuristic fallback)
+router.post('/ai-suggest', async (req, res) => {
+  try {
+    const { name, category, imageBase64, knitGauge } = req.body;
+    const suggestions = await generateCardiganSpecifications({ name, category, imageBase64, knitGauge });
+    res.json({ success: true, data: suggestions });
+  } catch (error) {
+    console.error('AI suggest route error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// AI Image Enhancement (Balances lighting, unblurs, sharpens fabric texture)
+router.post('/ai-enhance-image', async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) return res.status(400).json({ success: false, message: 'No image provided for enhancement' });
+    const enhanced = await enhanceAndUploadImage(image);
+    res.json({ success: true, data: enhanced });
+  } catch (error) {
+    console.error('AI image enhance route error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Dynamic Motion Video Loop Generator (from a still photo)
+router.post('/generate-video-motion', async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) return res.status(400).json({ success: false, message: 'No base image provided to generate video motion' });
+    const motionVideo = await generateMotionVideoFromImage(image);
+    res.json({ success: true, data: motionVideo });
+  } catch (error) {
+    console.error('Generate video motion route error:', error);
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
 
 // Get all products
 router.get('/', async (req, res) => {

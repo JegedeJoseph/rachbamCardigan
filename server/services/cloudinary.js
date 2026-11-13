@@ -86,5 +86,65 @@ export const uploadVideo = async (fileBuffer, folder = 'naira-cardigans/videos')
   }
 };
 
+/**
+ * AI Enhance & Polish Image
+ * Solves phone camera lighting and color limitations for local creators.
+ * Automatically balances exposure, enhances contrast, and sharpens fabric texture.
+ */
+export const enhanceAndUploadImage = async (fileBuffer, folder = 'naira-cardigans/enhanced') => {
+  try {
+    const result = await cloudinary.uploader.upload(fileBuffer, {
+      folder,
+      resource_type: 'image',
+      transformation: [
+        { effect: 'improve' },
+        { effect: 'auto_color' },
+        { effect: 'auto_contrast' },
+        { effect: 'sharpen:80' },
+        { width: 1200, height: 1500, crop: 'limit' },
+        { quality: 'auto:best' }
+      ]
+    });
+    return { url: result.secure_url, publicId: result.public_id };
+  } catch (error) {
+    console.error('Cloudinary enhance error:', error);
+    throw new Error('Failed to enhance image with Cloudinary AI');
+  }
+};
+
+/**
+ * Generate a slow-drape cinematic motion video loop from a still cardigan photograph.
+ * Useful for local producers who only have still photos.
+ */
+export const generateMotionVideoFromImage = async (fileBuffer, folder = 'naira-cardigans/videos') => {
+  try {
+    // 1. Upload base image
+    const imgUpload = await cloudinary.uploader.upload(fileBuffer, {
+      folder: 'naira-cardigans/temp-frames',
+      resource_type: 'image',
+      transformation: [
+        { effect: 'improve' },
+        { width: 1080, height: 1350, crop: 'fill' }
+      ]
+    });
+
+    // 2. Generate smooth cinematic video url with zoom/pan animation
+    const videoUrl = cloudinary.url(imgUpload.public_id, {
+      resource_type: 'video',
+      format: 'mp4',
+      transformation: [
+        { width: 720, height: 960, crop: 'fill', gravity: 'auto' },
+        { effect: 'zoompan:from_(g_north;zoom_1.0):to_(g_center;zoom_1.15):duration_5' },
+        { quality: 'auto' }
+      ]
+    });
+
+    return { url: videoUrl, publicId: imgUpload.public_id };
+  } catch (error) {
+    console.error('Generate motion video error:', error);
+    throw new Error('Failed to generate motion video from image');
+  }
+};
+
 export default cloudinary;
 

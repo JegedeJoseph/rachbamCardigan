@@ -65,6 +65,9 @@ export const productAPI = {
   deleteImage: (productId, imageId) => api.delete(`/products/${productId}/images/${imageId}`),
   uploadVideo: (id, video) => api.post(`/products/${id}/video`, { video }),
   uploadHoverImage: (id, image) => api.post(`/products/${id}/hover-image`, { image }),
+  aiSuggestSpecs: (payload) => api.post('/products/ai-suggest', payload),
+  aiEnhanceImage: (image) => api.post('/products/ai-enhance-image', { image }),
+  generateVideoMotion: (image) => api.post('/products/generate-video-motion', { image }),
 };
 
 // Shipping API
