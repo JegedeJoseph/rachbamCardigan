@@ -10,11 +10,17 @@ import Login from './pages/Login';
 import ForgotPassword from './pages/ForgotPassword';
 import ResetPassword from './pages/ResetPassword';
 import StaffManagement from './pages/StaffManagement';
+import LookbookManagement from './pages/LookbookManagement';
 
 // Store pages
 import StoreLayout from './components/store/StoreLayout';
-import StoreFront from './pages/store/StoreFront';
+import Home from './pages/store/Home';
+import Shop from './pages/store/Shop';
 import ProductDetail from './pages/store/ProductDetail';
+import Lookbook from './pages/store/Lookbook';
+import SizeGuide from './pages/store/SizeGuide';
+import ReturnsPolicy from './pages/store/ReturnsPolicy';
+import FAQ from './pages/store/FAQ';
 import Checkout from './pages/store/Checkout';
 import OrderConfirmation from './pages/store/OrderConfirmation';
 import TrackOrder from './pages/store/TrackOrder';
@@ -68,9 +74,13 @@ function AppRoutes() {
     <Routes>
       {/* Public Store Routes */}
       <Route element={<StoreLayout />}>
-        <Route path="/" element={<StoreFront />} />
-        <Route path="/shop" element={<StoreFront />} />
+        <Route path="/" element={<Home />} />
+        <Route path="/shop" element={<Shop />} />
         <Route path="/product/:id" element={<ProductDetail />} />
+        <Route path="/lookbook" element={<Lookbook />} />
+        <Route path="/size-guide" element={<SizeGuide />} />
+        <Route path="/returns" element={<ReturnsPolicy />} />
+        <Route path="/faq" element={<FAQ />} />
         <Route path="/checkout" element={<Checkout />} />
         <Route path="/order-confirmation" element={<OrderConfirmation />} />
         <Route path="/track-order" element={<TrackOrder />} />
@@ -105,6 +115,7 @@ function AppRoutes() {
         <Route path="products" element={<ProductManagement />} />
         <Route path="shipping" element={<ShippingRates />} />
         <Route path="staff" element={<StaffManagement />} />
+        <Route path="lookbook" element={<LookbookManagement />} />
       </Route>
     </Routes>
   );

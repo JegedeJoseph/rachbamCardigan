@@ -1,6 +1,6 @@
 import express from 'express';
 import { productRepository } from '../repositories/productRepository.js';
-import { uploadImage, uploadMultipleImages, deleteImage } from '../services/cloudinary.js';
+import { uploadImage, uploadMultipleImages, deleteImage, uploadVideo } from '../services/cloudinary.js';
 import { validate, createProductSchema, updateProductSchema } from '../validators/productValidator.js';
 
 const router = express.Router();
@@ -105,6 +105,39 @@ router.delete('/:id/images/:imageId', async (req, res) => {
       return res.status(404).json({ success: false, message: 'Product or Image not found' });
     }
 
+    res.json({ success: true, data: product });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+
+// Upload product video
+router.post('/:id/video', async (req, res) => {
+  try {
+    const { video } = req.body; // base64 video
+    if (!video) return res.status(400).json({ success: false, message: 'No video provided' });
+    const uploaded = await uploadVideo(video);
+    const product = await productRepository.findByIdAndUpdate(req.params.id, {
+      videoUrl: uploaded.url,
+      videoPublicId: uploaded.publicId
+    });
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
+    res.json({ success: true, data: product });
+  } catch (error) {
+    res.status(500).json({ success: false, message: error.message });
+  }
+});
+// Upload product hover image
+router.post('/:id/hover-image', async (req, res) => {
+  try {
+    const { image } = req.body;
+    if (!image) return res.status(400).json({ success: false, message: 'No image provided' });
+    const uploaded = await uploadImage(image, 'naira-cardigans/hover');
+    const product = await productRepository.findByIdAndUpdate(req.params.id, {
+      hoverImageUrl: uploaded.url,
+      hoverImagePublicId: uploaded.publicId
+    });
+    if (!product) return res.status(404).json({ success: false, message: 'Product not found' });
     res.json({ success: true, data: product });
   } catch (error) {
     res.status(500).json({ success: false, message: error.message });

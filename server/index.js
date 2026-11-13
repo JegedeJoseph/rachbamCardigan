@@ -12,6 +12,7 @@ import orderRoutes from './routes/orderRoutes.js';
 import authRoutes from './routes/authRoutes.js';
 import storeRoutes from './routes/storeRoutes.js';
 import checkoutRoutes from './routes/checkoutRoutes.js';
+import lookbookRoutes from './routes/lookbookRoutes.js';
 import { protect } from './middleware/auth.js';
 import checkConfig from './utils/configChecker.js';
 
@@ -67,6 +68,7 @@ app.use('/api/auth', authRoutes);
 // Public store routes (no auth required)
 app.use('/api/store', storeRoutes);
 app.use('/api/checkout', checkoutRoutes);
+app.use('/api/lookbooks', lookbookRoutes);
 
 // Protected admin routes
 app.use('/api/products', protect, productRoutes);

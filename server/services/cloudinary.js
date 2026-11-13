@@ -67,5 +67,24 @@ export const uploadMultipleImages = async (fileBuffers, folder = 'naira-cardigan
   }
 };
 
+export const uploadVideo = async (fileBuffer, folder = 'naira-cardigans/videos') => {
+  try {
+    const result = await cloudinary.uploader.upload(fileBuffer, {
+      folder,
+      resource_type: 'video',
+      chunk_size: 6000000,
+      eager: [
+        { format: 'mp4', quality: 'auto:good' },
+        { format: 'webm', quality: 'auto:good' }
+      ],
+      eager_async: true
+    });
+    return { url: result.secure_url, publicId: result.public_id };
+  } catch (error) {
+    console.error('Cloudinary video upload error:', error);
+    throw new Error('Failed to upload video to Cloudinary');
+  }
+};
+
 export default cloudinary;
 

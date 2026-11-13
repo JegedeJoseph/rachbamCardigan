@@ -63,6 +63,8 @@ export const productAPI = {
   delete: (id) => api.delete(`/products/${id}`),
   uploadImages: (id, images) => api.post(`/products/${id}/images`, { images }),
   deleteImage: (productId, imageId) => api.delete(`/products/${productId}/images/${imageId}`),
+  uploadVideo: (id, video) => api.post(`/products/${id}/video`, { video }),
+  uploadHoverImage: (id, image) => api.post(`/products/${id}/hover-image`, { image }),
 };
 
 // Shipping API
@@ -98,6 +100,17 @@ export const storeAPI = {
   createOrder: (data) => api.post('/checkout/create-order', data),
   verifyPayment: (reference) => api.get(`/checkout/verify/${reference}`),
   trackOrder: (orderNumber) => api.get(`/checkout/track/${orderNumber}`),
+  getLookbooks: () => api.get('/lookbooks'),
+  getLookbook: (id) => api.get(`/lookbooks/${id}`),
+};
+
+// Lookbook API
+export const lookbookAPI = {
+  getAll: () => api.get('/lookbooks'),
+  getById: (id) => api.get(`/lookbooks/${id}`),
+  create: (data) => api.post('/lookbooks', data),
+  update: (id, data) => api.put(`/lookbooks/${id}`, data),
+  delete: (id) => api.delete(`/lookbooks/${id}`),
 };
 
 // Image conversion utility

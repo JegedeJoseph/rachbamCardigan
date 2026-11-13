@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
-import { LayoutDashboard, Package, Truck, ShoppingBag, LogOut, User, Key, X } from 'lucide-react';
+import { LayoutDashboard, Package, Truck, ShoppingBag, LogOut, User, Key, X, BookImage } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import { authAPI } from '../services/api';
 
@@ -12,6 +12,7 @@ const AdminLayout = () => {
     { to: '/admin/dashboard', icon: LayoutDashboard, label: 'Dashboard' },
     { to: '/admin/orders', icon: ShoppingBag, label: 'Orders' },
     { to: '/admin/products', icon: Package, label: 'Products' },
+    { to: '/admin/lookbook', icon: BookImage, label: 'Lookbook' },
     { to: '/admin/shipping', icon: Truck, label: 'Shipping Rates' },
     ...(user?.role === 'superadmin' ? [{ to: '/admin/staff', icon: User, label: 'Staff Management' }] : []),
   ];

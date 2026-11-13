@@ -15,7 +15,25 @@ export const createProductSchema = z.object({
   price: z.number().positive('Price must be greater than 0'),
   variants: z.array(variantSchema).min(1, 'At least one variant is required'),
   category: z.string().optional(),
-  featured: z.boolean().optional()
+  featured: z.boolean().optional(),
+  knitGauge: z.enum(['Fine / Lightweight', 'Medium / All-Season', 'Chunky / Heavyweight']).optional(),
+  warmthLevel: z.number().int().min(1).max(5).optional(),
+  fiberComposition: z.string().optional(),
+  careInstructions: z.string().optional(),
+  measurements: z.object({
+    chest: z.string().optional(),
+    length: z.string().optional(),
+    sleeve: z.string().optional(),
+  }).optional(),
+  modelStats: z.object({
+    height: z.string().optional(),
+    sizeWorn: z.string().optional(),
+  }).optional(),
+  stylingTips: z.array(z.string()).optional(),
+  videoUrl: z.string().optional(),
+  videoPublicId: z.string().optional(),
+  hoverImageUrl: z.string().optional(),
+  hoverImagePublicId: z.string().optional(),
 });
 
 // Product update schema (all fields optional)
@@ -25,7 +43,25 @@ export const updateProductSchema = z.object({
   price: z.number().positive().optional(),
   variants: z.array(variantSchema).optional(),
   category: z.string().optional(),
-  featured: z.boolean().optional()
+  featured: z.boolean().optional(),
+  knitGauge: z.enum(['Fine / Lightweight', 'Medium / All-Season', 'Chunky / Heavyweight']).optional(),
+  warmthLevel: z.number().int().min(1).max(5).optional(),
+  fiberComposition: z.string().optional(),
+  careInstructions: z.string().optional(),
+  measurements: z.object({
+    chest: z.string().optional(),
+    length: z.string().optional(),
+    sleeve: z.string().optional(),
+  }).optional(),
+  modelStats: z.object({
+    height: z.string().optional(),
+    sizeWorn: z.string().optional(),
+  }).optional(),
+  stylingTips: z.array(z.string()).optional(),
+  videoUrl: z.string().optional(),
+  videoPublicId: z.string().optional(),
+  hoverImageUrl: z.string().optional(),
+  hoverImagePublicId: z.string().optional(),
 });
 
 // Image upload schema
