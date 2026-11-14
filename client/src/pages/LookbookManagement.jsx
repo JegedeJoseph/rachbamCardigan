@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
 import { 
   Plus, Edit, Trash2, Image, Tag, X, Sparkles, Wand2, 
-  Layers, CheckCircle2, AlertCircle, Copy, Check, ChevronDown 
+  Layers, CheckCircle2, AlertCircle, Copy, Check, ChevronDown,
+  Star, Upload, MoveLeft, MoveRight
 } from 'lucide-react';
 import { lookbookAPI, productAPI, convertToBase64 } from '../services/api';
 
@@ -18,15 +19,16 @@ const LookbookManagement = () => {
     taggedProducts: [],
     stylingTips: [''],
   });
-  const [imageFile, setImageFile] = useState(null);
-  const [imagePreview, setImagePreview] = useState('');
+
+  // Multiple images state (supports base64, objects, or remote URLs)
+  const [images, setImages] = useState([]);
   const [saving, setSaving] = useState(false);
 
   // AI Assistant States
   const [selectedProductForAi, setSelectedProductForAi] = useState('');
   const [selectedOccasion, setSelectedOccasion] = useState('1 Cardigan Styled 3 Ways');
   const [isGeneratingStory, setIsGeneratingStory] = useState(false);
-  const [isPolishingImage, setIsPolishingImage] = useState(false);
+  const [polishingIndex, setPolishingIndex] = useState(null);
   const [aiSuccessMessage, setAiSuccessMessage] = useState('');
   const [copiedPrompt, setCopiedPrompt] = useState(false);
 
@@ -52,8 +54,7 @@ const LookbookManagement = () => {
   const openCreate = () => {
     setEditingLookbook(null);
     setFormData({ title: '', description: '', taggedProducts: [], stylingTips: [''] });
-    setImageFile(null);
-    setImagePreview('');
+    setImages([]);
     setSelectedProductForAi('');
     setAiSuccessMessage('');
     setShowForm(true);
@@ -67,44 +68,79 @@ const LookbookManagement = () => {
       taggedProducts: lb.taggedProducts || [],
       stylingTips: lb.stylingTips?.length ? lb.stylingTips : [''],
     });
-    setImagePreview(lb.imageUrl || '');
-    setImageFile(null);
+
+    // Populate images array: check lb.images first, fallback to lb.imageUrl
+    if (lb.images && Array.isArray(lb.images) && lb.images.length > 0) {
+      setImages(lb.images.map((img) => (typeof img === 'string' ? img : img.url)));
+    } else if (lb.imageUrl) {
+      setImages([lb.imageUrl]);
+    } else {
+      setImages([]);
+    }
+
     setSelectedProductForAi('');
     setAiSuccessMessage('');
     setShowForm(true);
   };
 
-  const handleImageChange = async (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    setImageFile(file);
-    const base64 = await convertToBase64(file);
-    setImagePreview(base64);
+  // Multiple image upload handler
+  const handleImagesUpload = async (e) => {
+    const files = Array.from(e.target.files);
+    if (!files.length) return;
+
+    try {
+      const base64List = await Promise.all(files.map((file) => convertToBase64(file)));
+      setImages((prev) => [...prev, ...base64List]);
+      setAiSuccessMessage(`✨ Added ${files.length} photo(s) to story gallery!`);
+    } catch (err) {
+      console.error('Image process error:', err);
+      alert('Failed to process one or more images.');
+    }
   };
 
-  const handlePolishCoverPhoto = async () => {
-    if (!imagePreview) return;
-    setIsPolishingImage(true);
+  const removePhoto = (index) => {
+    setImages((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const setAsCoverPhoto = (index) => {
+    if (index === 0) return;
+    setImages((prev) => {
+      const copy = [...prev];
+      const [target] = copy.splice(index, 1);
+      return [target, ...copy];
+    });
+  };
+
+  const handlePolishPhoto = async (index) => {
+    setPolishingIndex(index);
     try {
-      const res = await productAPI.aiEnhanceImage(imagePreview);
+      const res = await productAPI.aiEnhanceImage(images[index]);
       if (res.data.data?.url) {
-        setImagePreview(res.data.data.url);
-        setImageFile(null);
-        setAiSuccessMessage('✨ Cover photo lighting, contrast, and yarn details polished!');
+        setImages((prev) => {
+          const copy = [...prev];
+          copy[index] = res.data.data.url;
+          return copy;
+        });
+        setAiSuccessMessage('✨ Photo lighting and contrast polished successfully!');
       }
     } catch (err) {
       console.error('Image polish error:', err);
       alert('Failed to polish photo.');
     } finally {
-      setIsPolishingImage(false);
+      setPolishingIndex(null);
     }
   };
 
-  const handleUseProductImage = (prod) => {
-    if (prod?.images?.[0]?.url) {
-      setImagePreview(prod.images[0].url);
-      setImageFile(null);
-      setAiSuccessMessage(`✨ Applied cover image from "${prod.name}"!`);
+  const handleUseAllProductImages = (prod) => {
+    if (prod?.images?.length) {
+      const prodUrls = prod.images.map((img) => img.url).filter(Boolean);
+      setImages((prev) => {
+        // avoid duplicating existing urls
+        const existing = new Set(prev);
+        const newOnes = prodUrls.filter((u) => !existing.has(u));
+        return [...prev, ...newOnes];
+      });
+      setAiSuccessMessage(`✨ Imported ${prod.images.length} photos from "${prod.name}"!`);
     }
   };
 
@@ -119,12 +155,14 @@ const LookbookManagement = () => {
       const prodCategory = selectedProd ? (selectedProd.category || 'Cardigan') : 'Cardigan';
       const prodGauge = selectedProd ? (selectedProd.knitGauge || '') : '';
 
+      const sampleImg = images[0] || (selectedProd?.images?.[0]?.url) || '';
+
       const res = await lookbookAPI.aiSuggestStory({
         productName: prodName,
         category: prodCategory,
         knitGauge: prodGauge,
         occasion: selectedOccasion,
-        imageBase64: imagePreview.startsWith('data:image') ? imagePreview : undefined,
+        imageBase64: sampleImg.startsWith('data:image') ? sampleImg : undefined,
       });
 
       const story = res.data.data;
@@ -143,9 +181,10 @@ const LookbookManagement = () => {
           };
         });
 
-        // If no image is selected yet, pull from the product automatically
-        if (!imagePreview && selectedProd?.images?.[0]?.url) {
-          setImagePreview(selectedProd.images[0].url);
+        // Automatically populate photos from product if none uploaded yet
+        if (images.length === 0 && selectedProd?.images?.length) {
+          const prodUrls = selectedProd.images.map((img) => img.url).filter(Boolean);
+          setImages(prodUrls);
         }
 
         setAiSuccessMessage(
@@ -184,18 +223,19 @@ const LookbookManagement = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    if (images.length === 0) {
+      alert('Please add at least one photo for this lookbook story.');
+      return;
+    }
+
     setSaving(true);
     try {
       const payload = {
         ...formData,
         stylingTips: formData.stylingTips.filter((t) => t.trim()),
+        images: images,
+        imageUrl: images[0] || '',
       };
-
-      if (imageFile) {
-        payload.imageBase64 = await convertToBase64(imageFile);
-      } else if (imagePreview && imagePreview.startsWith('http')) {
-        payload.imageUrl = imagePreview;
-      }
 
       if (editingLookbook) {
         await lookbookAPI.update(editingLookbook._id, payload);
@@ -221,7 +261,6 @@ const LookbookManagement = () => {
     }
   };
 
-  // Helper for Google Imagen/Veo prompt
   const getSuggestedAiPrompt = () => {
     const selectedProd = products.find((p) => p._id === selectedProductForAi);
     const name = selectedProd ? selectedProd.name : 'hand-knitted artisanal cardigan';
@@ -243,7 +282,7 @@ const LookbookManagement = () => {
           <span className="text-xs font-semibold uppercase tracking-wider text-primary">Artisanal Storytelling</span>
           <h1 className="text-2xl sm:text-3xl font-bold text-neutral-900">Lookbook Management</h1>
           <p className="text-sm text-neutral-500 mt-1">
-            Create high-fashion editorial stories to show customers how to style cardigans in real life.
+            Create high-fashion multi-photo editorial stories showing customers how to style cardigans in real life.
           </p>
         </div>
         <button
@@ -271,55 +310,64 @@ const LookbookManagement = () => {
         </div>
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {lookbooks.map((lb) => (
-            <div key={lb._id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden group shadow-sm hover:shadow-md transition">
-              <div className="aspect-[4/3] bg-neutral-100 relative overflow-hidden">
-                {lb.imageUrl ? (
-                  <img
-                    src={lb.imageUrl}
-                    alt={lb.title}
-                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
-                  />
-                ) : (
-                  <div className="w-full h-full flex items-center justify-center">
-                    <Image size={36} className="text-neutral-300" />
-                  </div>
-                )}
-                {lb.stylingTips?.length > 0 && (
-                  <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded font-medium">
-                    {lb.stylingTips.length} Styling Looks
-                  </div>
-                )}
-              </div>
-              <div className="p-4">
-                <h3 className="font-bold text-neutral-900 text-base">{lb.title}</h3>
-                {lb.description && (
-                  <p className="text-xs text-neutral-500 mt-1 line-clamp-2 leading-relaxed">
-                    {lb.description}
-                  </p>
-                )}
-                <div className="flex items-center gap-2 mt-3 text-xs text-neutral-400">
-                  <Tag size={13} className="text-primary" />
-                  <span>{lb.taggedProducts?.length || 0} products tagged</span>
+          {lookbooks.map((lb) => {
+            const photoCount = lb.images?.length || (lb.imageUrl ? 1 : 0);
+            return (
+              <div key={lb._id} className="bg-white border border-neutral-200 rounded-2xl overflow-hidden group shadow-sm hover:shadow-md transition">
+                <div className="aspect-[4/3] bg-neutral-100 relative overflow-hidden">
+                  {lb.imageUrl ? (
+                    <img
+                      src={lb.imageUrl}
+                      alt={lb.title}
+                      className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                    />
+                  ) : (
+                    <div className="w-full h-full flex items-center justify-center">
+                      <Image size={36} className="text-neutral-300" />
+                    </div>
+                  )}
+                  {photoCount > 1 && (
+                    <div className="absolute top-2 right-2 bg-black/70 backdrop-blur-sm text-white text-[11px] px-2 py-0.5 rounded-md font-semibold flex items-center gap-1 shadow-sm">
+                      <Layers size={12} />
+                      <span>{photoCount} Photos</span>
+                    </div>
+                  )}
+                  {lb.stylingTips?.length > 0 && (
+                    <div className="absolute bottom-2 left-2 bg-black/60 backdrop-blur-sm text-white text-[10px] px-2 py-0.5 rounded font-medium">
+                      {lb.stylingTips.length} Styling Looks
+                    </div>
+                  )}
                 </div>
-                <div className="flex gap-2 mt-4 pt-3 border-t border-neutral-100">
-                  <button
-                    onClick={() => openEdit(lb)}
-                    className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-700 hover:border-primary hover:text-primary transition"
-                  >
-                    <Edit size={14} /> Edit Story
-                  </button>
-                  <button
-                    onClick={() => handleDelete(lb._id)}
-                    className="flex items-center justify-center py-2 px-3 border border-red-200 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 transition"
-                    title="Delete story"
-                  >
-                    <Trash2 size={14} />
-                  </button>
+                <div className="p-4">
+                  <h3 className="font-bold text-neutral-900 text-base">{lb.title}</h3>
+                  {lb.description && (
+                    <p className="text-xs text-neutral-500 mt-1 line-clamp-2 leading-relaxed">
+                      {lb.description}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 mt-3 text-xs text-neutral-400">
+                    <Tag size={13} className="text-primary" />
+                    <span>{lb.taggedProducts?.length || 0} products tagged</span>
+                  </div>
+                  <div className="flex gap-2 mt-4 pt-3 border-t border-neutral-100">
+                    <button
+                      onClick={() => openEdit(lb)}
+                      className="flex-1 flex items-center justify-center gap-1.5 py-2 border border-neutral-200 rounded-lg text-xs font-semibold text-neutral-700 hover:border-primary hover:text-primary transition"
+                    >
+                      <Edit size={14} /> Edit Story
+                    </button>
+                    <button
+                      onClick={() => handleDelete(lb._id)}
+                      className="flex items-center justify-center py-2 px-3 border border-red-200 rounded-lg text-xs font-semibold text-red-500 hover:bg-red-50 transition"
+                      title="Delete story"
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
-            </div>
-          ))}
+            );
+          })}
         </div>
       )}
 
@@ -332,7 +380,7 @@ const LookbookManagement = () => {
               <div>
                 <span className="text-[11px] font-bold uppercase tracking-wider text-primary">Lookbook Studio CMS</span>
                 <h2 className="text-lg font-bold text-neutral-900">
-                  {editingLookbook ? 'Edit Editorial Story' : 'Create New Editorial Story'}
+                  {editingLookbook ? 'Edit Multi-Photo Editorial Story' : 'Create New Multi-Photo Editorial Story'}
                 </h2>
               </div>
               <button 
@@ -404,11 +452,11 @@ const LookbookManagement = () => {
                         type="button"
                         onClick={() => {
                           const prod = products.find((p) => p._id === selectedProductForAi);
-                          handleUseProductImage(prod);
+                          handleUseAllProductImages(prod);
                         }}
                         className="text-[11px] font-medium text-neutral-700 hover:text-primary underline flex items-center gap-1"
                       >
-                        <Image size={12} /> Use this cardigan&apos;s photo as cover
+                        <Layers size={12} /> Import all photos from this cardigan
                       </button>
                     )}
                   </div>
@@ -450,64 +498,114 @@ const LookbookManagement = () => {
               {/* Form Content */}
               <form id="lookbook-form" onSubmit={handleSubmit} className="space-y-6">
                 
-                {/* Cover Image Upload & Polish */}
+                {/* MULTI-PHOTO GALLERY UPLOAD */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700">
-                      Editorial Cover Photo *
-                    </label>
-                    {imagePreview && (
-                      <button
-                        type="button"
-                        onClick={handlePolishCoverPhoto}
-                        disabled={isPolishingImage}
-                        className="inline-flex items-center gap-1 text-[11px] font-semibold text-neutral-800 bg-amber-50 border border-amber-200 px-2.5 py-1 rounded hover:bg-amber-100 transition"
-                        title="AI auto-balances lighting, contrast, and cleans dark shadows"
-                      >
-                        {isPolishingImage ? (
-                          <div className="w-3 h-3 border border-neutral-700 border-t-transparent rounded-full animate-spin" />
-                        ) : (
-                          <Wand2 size={12} className="text-amber-600" />
-                        )}
-                        <span>{isPolishingImage ? 'Polishing Photo...' : '✨ Polish with AI'}</span>
-                      </button>
-                    )}
+                    <div>
+                      <label className="block text-xs font-semibold uppercase tracking-wider text-neutral-700">
+                        Story Editorial Photos ({images.length}) *
+                      </label>
+                      <p className="text-[11px] text-neutral-400">
+                        Upload multiple photos (front, back, outfit styling variations, and detail close-ups). First photo is the Cover.
+                      </p>
+                    </div>
                   </div>
 
+                  {/* Upload Box */}
                   <div
-                    className="border-2 border-dashed border-neutral-200 rounded-xl p-4 text-center cursor-pointer hover:border-primary transition relative bg-neutral-50/50"
-                    onClick={() => document.getElementById('lb-image-input').click()}
+                    className="border-2 border-dashed border-neutral-300 rounded-xl p-5 text-center cursor-pointer hover:border-primary transition bg-neutral-50/50"
+                    onClick={() => document.getElementById('lb-multi-images-input').click()}
                   >
-                    {imagePreview ? (
-                      <div className="relative group max-h-56 mx-auto inline-block">
-                        <img
-                          src={imagePreview}
-                          alt="Cover Preview"
-                          className="max-h-56 mx-auto rounded-lg object-contain shadow-sm"
-                        />
-                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 flex items-center justify-center rounded-lg transition text-white text-xs font-semibold">
-                          Click to Change Photo
-                        </div>
-                      </div>
-                    ) : (
-                      <div className="py-8">
-                        <Image size={32} className="mx-auto text-neutral-400 mb-2" />
-                        <p className="text-xs font-medium text-neutral-600">
-                          Click to upload full-bleed editorial / lifestyle photo
-                        </p>
-                        <p className="text-[11px] text-neutral-400 mt-1">
-                          Tip: Or select a cardigan in the AI box above to use its existing photo!
-                        </p>
-                      </div>
-                    )}
+                    <Upload size={28} className="mx-auto text-neutral-400 mb-1.5" />
+                    <p className="text-xs font-semibold text-neutral-700">
+                      Click to Select Multiple Editorial Photos
+                    </p>
+                    <p className="text-[11px] text-neutral-400 mt-0.5">
+                      Supports JPG, PNG, WEBP. You can upload several images at once.
+                    </p>
                     <input
-                      id="lb-image-input"
+                      id="lb-multi-images-input"
                       type="file"
                       accept="image/*"
+                      multiple
                       className="hidden"
-                      onChange={handleImageChange}
+                      onChange={handleImagesUpload}
                     />
                   </div>
+
+                  {/* Multi-photo Thumbnail Grid */}
+                  {images.length > 0 && (
+                    <div className="mt-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <span className="text-[11px] font-bold text-neutral-600 uppercase tracking-wider">
+                          Photos in this Story:
+                        </span>
+                        <span className="text-[11px] text-neutral-400">
+                          Click &quot;Make Cover&quot; to set the primary card image
+                        </span>
+                      </div>
+
+                      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                        {images.map((img, idx) => (
+                          <div
+                            key={idx}
+                            className={`relative group aspect-[3/4] rounded-xl overflow-hidden border-2 bg-neutral-100 flex flex-col shadow-sm transition ${
+                              idx === 0 ? 'border-primary ring-2 ring-primary/20' : 'border-neutral-200'
+                            }`}
+                          >
+                            <img
+                              src={img}
+                              alt={`Lookbook photo ${idx + 1}`}
+                              className="w-full h-full object-cover"
+                            />
+
+                            {/* Badge */}
+                            {idx === 0 ? (
+                              <div className="absolute top-2 left-2 bg-primary text-white text-[10px] font-bold px-2 py-0.5 rounded shadow flex items-center gap-1 z-10">
+                                <Star size={10} fill="white" />
+                                <span>Cover Photo</span>
+                              </div>
+                            ) : (
+                              <button
+                                type="button"
+                                onClick={() => setAsCoverPhoto(idx)}
+                                className="absolute top-2 left-2 bg-black/70 hover:bg-neutral-900 text-white text-[10px] font-medium px-2 py-0.5 rounded shadow opacity-0 group-hover:opacity-100 transition z-10"
+                                title="Set as primary story cover"
+                              >
+                                Set Cover
+                              </button>
+                            )}
+
+                            {/* Remove button */}
+                            <button
+                              type="button"
+                              onClick={() => removePhoto(idx)}
+                              className="absolute top-2 right-2 bg-black/70 hover:bg-red-600 text-white p-1 rounded-full transition z-10"
+                              title="Remove photo"
+                            >
+                              <X size={12} />
+                            </button>
+
+                            {/* AI Polish button on bottom overlay */}
+                            <button
+                              type="button"
+                              onClick={() => handlePolishPhoto(idx)}
+                              disabled={polishingIndex === idx}
+                              className="absolute bottom-2 left-2 right-2 bg-neutral-900/80 hover:bg-neutral-900 text-white text-[10px] font-semibold py-1 rounded flex items-center justify-center gap-1 backdrop-blur-sm transition"
+                              title="AI balances lighting and contrast"
+                            >
+                              {polishingIndex === idx ? (
+                                <div className="w-2.5 h-2.5 border border-white border-t-transparent rounded-full animate-spin" />
+                              ) : (
+                                <Wand2 size={10} className="text-amber-300" />
+                              )}
+                              <span>{polishingIndex === idx ? 'Polishing...' : '✨ Polish'}</span>
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
                 </div>
 
                 {/* Title */}
