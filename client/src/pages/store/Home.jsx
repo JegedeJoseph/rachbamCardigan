@@ -14,8 +14,12 @@ const CATEGORIES = [
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [lookbooks, setLookbooks] = useState([]);
+  const [heroVideoUrl, setHeroVideoUrl] = useState('');
   const [loading, setLoading] = useState(true);
   const heroRef = useRef(null);
+
+  const DEFAULT_HERO_VIDEO = 'https://cdn.coverr.co/videos/coverr-woman-in-a-knit-sweater-walking-outdoors-5134/1080p.mp4';
+  const DEFAULT_HERO_POSTER = 'https://images.unsplash.com/photo-1434389677669-e08b4cac3105?q=80&w=1920&auto=format&fit=crop';
 
   useEffect(() => {
     Promise.all([
@@ -23,8 +27,18 @@ const Home = () => {
       storeAPI.getLookbooks().catch(() => ({ data: { data: [] } })),
     ]).then(([productsRes, lookbooksRes]) => {
       const products = productsRes.data.data || [];
-      setFeaturedProducts(products.filter(p => p.featured).slice(0, 4));
+      const featured = products.filter(p => p.featured);
+      setFeaturedProducts(featured.slice(0, 4));
       setLookbooks((lookbooksRes.data.data || []).slice(0, 3));
+
+      // Dynamically use video from featured product, any cardigan video, or fallback loop
+      const productWithVideo = featured.find(p => p.videoUrl) || products.find(p => p.videoUrl);
+      if (productWithVideo?.videoUrl) {
+        setHeroVideoUrl(productWithVideo.videoUrl);
+      } else {
+        setHeroVideoUrl(DEFAULT_HERO_VIDEO);
+      }
+
       setLoading(false);
     });
   }, []);
@@ -36,11 +50,27 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ── HERO ── */}
-      <section ref={heroRef} className="relative min-h-[90vh] flex items-center justify-center overflow-hidden bg-stone-900">
-        <div className="absolute inset-0 bg-gradient-to-br from-stone-900 via-stone-800 to-primary/30" />
+      {/* ── HERO WITH VIDEO LOOP BACKGROUND ── */}
+      <section ref={heroRef} className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-stone-950">
+        {/* Autoplaying, muted loop video */}
+        <video
+          key={heroVideoUrl || 'default'}
+          autoPlay
+          loop
+          muted
+          playsInline
+          poster={DEFAULT_HERO_POSTER}
+          className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none opacity-40 transition-opacity duration-1000"
+        >
+          {heroVideoUrl && <source src={heroVideoUrl} type="video/mp4" />}
+        </video>
+
+        {/* Cinematic Vignette Overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-stone-950 via-stone-950/60 to-stone-950/30" />
+        <div className="absolute inset-0 bg-radial-gradient from-transparent via-stone-950/40 to-stone-950/80 pointer-events-none" />
+
         <div className="relative z-10 text-center text-white px-4 max-w-4xl mx-auto">
-          <p className="text-sm uppercase tracking-[0.4em] text-primary/80 font-medium mb-6">
+          <p className="text-sm uppercase tracking-[0.4em] text-primary/90 font-medium mb-6">
             Rachbam Cardigans
           </p>
           <h1 className="text-5xl md:text-7xl font-bold leading-tight mb-6">
@@ -54,13 +84,13 @@ const Home = () => {
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               to="/shop"
-              className="inline-flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-primary/90 transition-all hover:gap-3"
+              className="inline-flex items-center gap-2 bg-primary text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-primary/90 transition-all hover:gap-3 shadow-lg shadow-primary/20"
             >
               Shop the Collection <ArrowRight size={20} />
             </Link>
             <Link
               to="/lookbook"
-              className="inline-flex items-center gap-2 border border-white/40 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white/10 transition-all"
+              className="inline-flex items-center gap-2 border border-white/40 text-white px-8 py-4 rounded-full font-semibold text-lg hover:bg-white/10 transition-all backdrop-blur-sm"
             >
               View Lookbook
             </Link>
@@ -68,7 +98,7 @@ const Home = () => {
         </div>
         <button
           onClick={scrollToContent}
-          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 hover:text-white transition animate-bounce"
+          className="absolute bottom-8 left-1/2 -translate-x-1/2 text-white/60 hover:text-white transition animate-bounce z-10"
           aria-label="Scroll down"
         >
           <ChevronDown size={32} />
