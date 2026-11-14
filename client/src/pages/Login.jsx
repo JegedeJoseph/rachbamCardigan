@@ -34,6 +34,10 @@ const Login = () => {
   };
 
   const handleGoogleSignIn = async () => {
+    if (!auth || !googleProvider) {
+      setError('Google Sign-In is not configured. Please use email and password to log in.');
+      return;
+    }
     try {
       setError('');
       setLoading(true);

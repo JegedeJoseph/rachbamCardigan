@@ -14,7 +14,8 @@ const CATEGORIES = [
 const Home = () => {
   const [featuredProducts, setFeaturedProducts] = useState([]);
   const [lookbooks, setLookbooks] = useState([]);
-  const [heroVideoUrl, setHeroVideoUrl] = useState('');
+  const [heroVideos, setHeroVideos] = useState([]);
+  const [currentVideoIndex, setCurrentVideoIndex] = useState(0);
   const [loading, setLoading] = useState(true);
   const heroRef = useRef(null);
 
@@ -31,17 +32,23 @@ const Home = () => {
       setFeaturedProducts(featured.slice(0, 4));
       setLookbooks((lookbooksRes.data.data || []).slice(0, 3));
 
-      // Dynamically use video from featured product, any cardigan video, or fallback loop
-      const productWithVideo = featured.find(p => p.videoUrl) || products.find(p => p.videoUrl);
-      if (productWithVideo?.videoUrl) {
-        setHeroVideoUrl(productWithVideo.videoUrl);
-      } else {
-        setHeroVideoUrl(DEFAULT_HERO_VIDEO);
-      }
+      // Collect all featured product videos, other product videos, plus default loop
+      const featuredVids = featured.map(p => p.videoUrl).filter(Boolean);
+      const otherVids = products.map(p => p.videoUrl).filter(Boolean);
+      const allPlaylist = [...new Set([...featuredVids, ...otherVids, DEFAULT_HERO_VIDEO])];
+      setHeroVideos(allPlaylist);
 
       setLoading(false);
     });
   }, []);
+
+  const handleNextVideo = () => {
+    if (heroVideos.length > 1) {
+      setCurrentVideoIndex(prev => (prev + 1) % heroVideos.length);
+    }
+  };
+
+  const currentHeroVideo = heroVideos[currentVideoIndex] || DEFAULT_HERO_VIDEO;
 
   const scrollToContent = () => {
     document.getElementById('categories')?.scrollIntoView({ behavior: 'smooth' });
@@ -50,19 +57,20 @@ const Home = () => {
   return (
     <div className="min-h-screen bg-white">
 
-      {/* ── HERO WITH VIDEO LOOP BACKGROUND ── */}
+      {/* ── HERO WITH SEQUENTIAL VIDEO PLAYLIST LOOP ── */}
       <section ref={heroRef} className="relative min-h-[92vh] flex items-center justify-center overflow-hidden bg-stone-950">
-        {/* Autoplaying, muted loop video */}
+        {/* Plays all featured videos + default video in continuous sequence */}
         <video
-          key={heroVideoUrl || 'default'}
+          key={`${currentHeroVideo}-${currentVideoIndex}`}
           autoPlay
-          loop
           muted
           playsInline
+          loop={heroVideos.length <= 1}
+          onEnded={handleNextVideo}
           poster={DEFAULT_HERO_POSTER}
           className="absolute inset-0 w-full h-full object-cover scale-105 pointer-events-none opacity-40 transition-opacity duration-1000"
         >
-          {heroVideoUrl && <source src={heroVideoUrl} type="video/mp4" />}
+          <source src={currentHeroVideo} type="video/mp4" />
         </video>
 
         {/* Cinematic Vignette Overlay */}
